@@ -1,0 +1,23 @@
+# bot方的连接地址
+bot:
+  host: "localhost"
+  port: 54100
+
+  # 会话号
+  sessionId: 12345
+
+# 消息格式
+# 各项注释请不要删除，方便随时查阅
+format:
+  # 该条消息格式是来自于qq群消息的消息格式
+  # 以下为所有占位符，在实际运行过程中这些占位符会被实际数据替代：
+  # %sessionName%    会话备注（由bot方决定）
+  # %groupId%    群号
+  # %groupName%    群名
+  # %groupNickname%    群昵称（由bot方决定，相当于给该群起的别名）
+  # %senderId%    发送者qq
+  # %senderNickname%    发送者昵称
+  # %senderGroupNickname%    发送者的群昵称（若无，则此占位符会被自动填充发送者昵称）
+  # %message%    消息内容
+  fromBot: "[%groupNickname%] <%senderGroupNickname%> %message%"
+
