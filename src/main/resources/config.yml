@@ -6,10 +6,15 @@ bot:
   # 会话号
   sessionId: 12345
 
+# 服务器名字
+# 在下方的消息格式定义中可以使用占位符%serverName%来获得服务器名字
+serverName: "MinecraftServer"
+
 # 消息格式
 # 各项注释请不要删除，方便随时查阅
 format:
-  # 该条消息格式是来自于qq群消息的消息格式
+  ##########
+  # 该条消息格式是来自于qq群消息的消息格式，将被发送到游戏中
   # 以下为所有占位符，在实际运行过程中这些占位符会被实际数据替代：
   # %sessionName%    会话备注（由bot方决定）
   # %groupId%    群号
@@ -20,4 +25,32 @@ format:
   # %senderGroupNickname%    发送者的群昵称（若无，则此占位符会被自动填充发送者昵称）
   # %message%    消息内容
   fromBot: "[%groupNickname%] <%senderGroupNickname%> %message%"
+  ##########
 
+  ##########
+  # 以下的消息格式均为发送到qq群消息的消息格式，将被发送到QQ群和其它在同一个会话的mc服中
+  # 每项可能有仅仅属于该项的占位符
+
+  # 该消息为当玩家进入游戏时发送
+  # %playerName%    加入游戏玩家的ID
+  join: "[%serverName%] %playerName% 加入了游戏"
+
+  # 该消息为当玩家离开游戏时发送
+  # %playerName%    离开游戏玩家的ID
+  quit: "[%serverName%] %playerName% 离开了游戏"
+
+  # 该消息为当玩家发送消息时发送
+  # %playerName%    发送消息的玩家ID
+  # %message%    消息内容
+  message: "[%serverName%] %playerName% 说 %message%"
+
+  # 该消息为当玩家死亡时发送
+  # %playerName%    死亡的玩家ID
+  # %deathMessage%    死亡信息（此信息已经包含玩家ID，相当于游戏里聊天框显示的死亡信息）
+  death: "[%serverName%] %deathMessage%"
+
+  # 该消息为当玩家被踢出时发送
+  # %playerName%    被踢的玩家ID
+  # %kickReason%    踢出原因
+  kick: "[%serverName%] %playerName% 被踢了，因为 %kickReason%"
+  ##########
