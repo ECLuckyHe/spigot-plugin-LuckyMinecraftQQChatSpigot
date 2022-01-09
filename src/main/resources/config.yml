@@ -2,6 +2,9 @@
 bot:
   host: "localhost"
   port: 54100
+  
+  # 连接失败尝试重连时间
+  retryTimes: 5
 
   # 会话号
   sessionId: 12345

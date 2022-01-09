@@ -17,6 +17,14 @@ public class ConfigOperation {
         return config.getInt("bot.port");
     }
 
+    public static long getBotSessionId() {
+        return config.getLong("bot.sessionId");
+    }
+
+    public static int getBotRetryTimes() {
+        return config.getInt("bot.retryTimes");
+    }
+
     public static String getServerName() {
         return config.getString("serverName");
     }

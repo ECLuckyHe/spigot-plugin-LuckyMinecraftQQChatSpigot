@@ -1,9 +1,14 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.thread;
 
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.ConfigOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarInt;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarIntString;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarLong;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketReceiveUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.QqFormatPlaceholder;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.ReplacePlaceholderUtil;
 
 import java.io.*;
 import java.net.Socket;
@@ -14,6 +19,8 @@ import java.util.logging.Logger;
 
 public class MinecraftConnectionThread extends Thread {
     private final String serverName = ConfigOperation.getServerName();
+    private final long sessionId = ConfigOperation.getBotSessionId();
+    private final String sessionName;
 
     private final Queue<Packet> sendQueue = new ConcurrentLinkedQueue<>();
     private final Queue<Packet> receiveQueue = new ConcurrentLinkedQueue<>();
@@ -24,11 +31,32 @@ public class MinecraftConnectionThread extends Thread {
 
     private final Logger logger;
 
+    private final String formatFromBot = ConfigOperation.getFormatFromBot();
+
     private boolean isConnected = true;
+    private boolean isStop = false;
     private final CountDownLatch cdl = new CountDownLatch(3);
 
-    public void logInfo(String threadName, String info) {
+    private void logInfo(String threadName, String info) {
         logger.info("[" + threadName + "] " + info);
+    }
+
+    private void logWarning(String threadName, String warning) {
+        logger.info("[" + threadName + "] " + warning);
+    }
+
+    public void sendClosePacket(String info) {
+        VarInt packetId = new VarInt(0xF0);
+        VarIntString string = new VarIntString(info);
+        sendQueue.add(new Packet(new VarInt(packetId.getBytesLength() + string.getBytesLength()), packetId, string.getBytes()));
+    }
+
+    public void addSendQueue(Packet packet) {
+        sendQueue.add(packet);
+    }
+
+    public boolean isStop() {
+        return isStop;
     }
 
     @Override
@@ -54,14 +82,14 @@ public class MinecraftConnectionThread extends Thread {
                 } catch (Exception e) {
                     isConnected = false;
                     e.printStackTrace();
-                    logInfo(threadName, "线程出现异常，开始关闭Socket");
+                    logWarning(threadName, "线程出现异常，开始关闭Socket");
 
                     try {
                         socket.close();
                         logInfo(threadName, "Socket关闭成功");
                     } catch (IOException ex) {
                         ex.printStackTrace();
-                        logInfo(threadName, "Socket关闭失败");
+                        logWarning(threadName, "Socket关闭失败");
                     }
                 }
             }
@@ -82,14 +110,14 @@ public class MinecraftConnectionThread extends Thread {
                 } catch (Exception e) {
                     isConnected = false;
                     e.printStackTrace();
-                    logInfo(threadName, "线程出现异常，开始关闭Socket");
+                    logWarning(threadName, "线程出现异常，开始关闭Socket");
 
                     try {
                         socket.close();
                         logInfo(threadName, "Socket关闭成功");
                     } catch (IOException ex) {
                         ex.printStackTrace();
-                        logInfo(threadName, "Socket关闭失败");
+                        logWarning(threadName, "Socket关闭失败");
                     }
                 }
             }
@@ -106,19 +134,46 @@ public class MinecraftConnectionThread extends Thread {
                 try {
                     Packet packet = receiveQueue.poll();
                     if (packet != null) {
-
+                        switch (packet.getId().getValue()) {
+                            case 0x20:
+//                                回应心跳包
+                                VarLong ping = new VarLong(packet.getData());
+                                VarInt pongPacketId = new VarInt(0x20);
+                                sendQueue.add(new Packet(
+                                        new VarInt(pongPacketId.getBytesLength() + ping.getBytesLength()),
+                                        pongPacketId,
+                                        ping.getBytes()
+                                ));
+                                break;
+                            case 0xF0:
+//                                关闭包
+                                VarIntString existMsg = new VarIntString(packet.getData());
+                                logInfo(threadName, "对方要求断开连接，原因：" + existMsg.getContent());
+                                isConnected = false;
+                                socket.close();
+                                break;
+                            case 0x11:
+//                                原封不动发送到服内的消息包
+                                VarIntString msg = new VarIntString(packet.getData());
+                                MinecraftMessageUtil.sendMinecraftMessage(msg.getContent());
+                                break;
+                            case 0x10:
+//                                来自群内的消息
+                                ConnectionPacketReceiveUtil.handleMessageFromBot(formatFromBot, packet, sessionName);
+                                break;
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                     isConnected = false;
-                    logInfo(threadName, "出现异常，开始关闭Socket");
+                    logWarning(threadName, "出现异常，开始关闭Socket");
 
                     try {
                         socket.close();
                         logInfo(threadName, "Socket关闭成功");
                     } catch (IOException ex) {
                         ex.printStackTrace();
-                        logInfo(threadName, "Socket关闭失败");
+                        logWarning(threadName, "Socket关闭失败");
                     }
                 }
             }
@@ -150,11 +205,13 @@ public class MinecraftConnectionThread extends Thread {
         }
 
         logInfo("Socket", "已确认关闭");
+        isStop = true;
     }
 
-    public MinecraftConnectionThread(Socket socket, Logger logger) throws IOException {
+    public MinecraftConnectionThread(Socket socket, Logger logger, String sessionName) throws IOException {
         this.socket = socket;
         this.logger = logger;
+        this.sessionName = sessionName;
 
         this.inputStream = new BufferedInputStream(socket.getInputStream());
         this.outputStream = new BufferedOutputStream(socket.getOutputStream());
