@@ -5,13 +5,17 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datat
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarIntString;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarLong;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ByteUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketReceiveUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.AsyncCaller;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftFontStyleCode;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.QqFormatPlaceholder;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.ReplacePlaceholderUtil;
+import org.bukkit.Server;
+import org.bukkit.entity.Player;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -21,10 +25,13 @@ public class MinecraftConnectionThread extends Thread {
     private final String serverName = ConfigOperation.getServerName();
     private final long sessionId = ConfigOperation.getBotSessionId();
     private final String sessionName;
+    private final int heartbeatGap;
+    private int heartbeatCount = 0;
 
     private final Queue<Packet> sendQueue = new ConcurrentLinkedQueue<>();
     private final Queue<Packet> receiveQueue = new ConcurrentLinkedQueue<>();
 
+    private final Server server;
     private final Socket socket;
     private final InputStream inputStream;
     private final OutputStream outputStream;
@@ -35,7 +42,7 @@ public class MinecraftConnectionThread extends Thread {
 
     private boolean isConnected = true;
     private boolean isStop = false;
-    private final CountDownLatch cdl = new CountDownLatch(3);
+    private final CountDownLatch cdl = new CountDownLatch(4);
 
     private void logInfo(String threadName, String info) {
         logger.info("[" + threadName + "] " + info);
@@ -61,7 +68,7 @@ public class MinecraftConnectionThread extends Thread {
 
     @Override
     public void run() {
-        Thread sendThread = new Thread(() -> {
+        AsyncCaller.run(() -> {
 //            此内容与bot端的发送线程差别不大
             String threadName = "发送线程";
             logInfo(threadName, "线程启动");
@@ -98,7 +105,7 @@ public class MinecraftConnectionThread extends Thread {
             logInfo(threadName, "结束工作");
         });
 
-        Thread receiveThread = new Thread(() -> {
+        AsyncCaller.run(() -> {
             String threadName = "接收线程";
 
             while (isConnected) {
@@ -126,7 +133,7 @@ public class MinecraftConnectionThread extends Thread {
             logInfo(threadName, "结束工作");
         });
 
-        Thread receiveHandlerThread = new Thread(() -> {
+        AsyncCaller.run(() -> {
             String threadName = "接收处理";
             logInfo(threadName, "线程启动");
 
@@ -144,11 +151,41 @@ public class MinecraftConnectionThread extends Thread {
                                         pongPacketId,
                                         ping.getBytes()
                                 ));
+                                heartbeatCount = 0;
+                                break;
+                            case 0x21:
+//                                收到要求提供玩家在线信息数据的数据包
+                                VarLong groupId = new VarLong(packet.getData());
+
+                                VarInt onlinePlayerPacketId = new VarInt(0x21);
+                                Collection<? extends Player> onlinePlayerList = MinecraftMessageUtil.getOnlinePlayerList();
+                                VarInt onlinePlayers = new VarInt(onlinePlayerList.size());
+                                byte[][] onlinePlayerData = new byte[onlinePlayers.getValue()][];
+
+                                int index = 0;
+                                for (Player player : onlinePlayerList) {
+                                    onlinePlayerData[index] = new VarIntString(player.getName()).getBytes();
+                                    index += 1;
+                                }
+
+                                byte[] mergeAll = ByteUtil.byteMergeAll(onlinePlayerData);
+
+                                sendQueue.add(new Packet(
+                                        new VarInt(onlinePlayerPacketId.getBytesLength() + groupId.getBytesLength() + onlinePlayers.getBytesLength() + mergeAll.length),
+                                        onlinePlayerPacketId,
+                                        ByteUtil.byteMergeAll(groupId.getBytes(), onlinePlayers.getBytes(), mergeAll)
+                                ));
                                 break;
                             case 0xF0:
 //                                关闭包
-                                VarIntString existMsg = new VarIntString(packet.getData());
-                                logInfo(threadName, "对方要求断开连接，原因：" + existMsg.getContent());
+                                VarIntString exitMsg = new VarIntString(packet.getData());
+                                logInfo(threadName, "对方要求断开连接，原因：" + exitMsg.getContent());
+
+                                MinecraftMessageUtil.sendMinecraftMessage(
+                                        MinecraftFontStyleCode.LIGHT_PURPLE + "[LuckyChat] " +
+                                                MinecraftFontStyleCode.RED + "服务端要求断开连接，原因：" + exitMsg.getContent()
+                                );
+
                                 isConnected = false;
                                 socket.close();
                                 break;
@@ -182,10 +219,39 @@ public class MinecraftConnectionThread extends Thread {
             logInfo(threadName, "结束工作");
         });
 
-//        启动线程
-        sendThread.start();
-        receiveThread.start();
-        receiveHandlerThread.start();
+        AsyncCaller.run(() -> {
+            String threadName = "心跳检测";
+            logInfo(threadName, "线程启动");
+
+            while (isConnected) {
+                try {
+                    heartbeatCount += 1;
+                    Thread.sleep(1000L);
+
+//                    如果超过心跳包发送频率+5秒以上，则断开连接
+                    if (heartbeatGap + 5 < heartbeatCount) {
+                        logWarning(threadName, "已经" + heartbeatCount + "秒未接收到心跳包，开始关闭连接（服务端发送心跳包频率为" + heartbeatGap + "秒）");
+                        socket.close();
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    isConnected = false;
+                    logWarning(threadName, "出现异常，开始关闭Socket");
+
+                    try {
+                        socket.close();
+                        logInfo(threadName, "Socket关闭成功");
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                        logWarning(threadName, "Socket关闭失败");
+                    }
+                }
+            }
+
+            cdl.countDown();
+            logInfo(threadName, "结束工作");
+        });
 
 //        等待所有线程结束
         try {
@@ -208,10 +274,12 @@ public class MinecraftConnectionThread extends Thread {
         isStop = true;
     }
 
-    public MinecraftConnectionThread(Socket socket, Logger logger, String sessionName) throws IOException {
+    public MinecraftConnectionThread(Server server, Socket socket, Logger logger, String sessionName, int heartbeatGap) throws IOException {
+        this.server = server;
         this.socket = socket;
         this.logger = logger;
         this.sessionName = sessionName;
+        this.heartbeatGap = heartbeatGap;
 
         this.inputStream = new BufferedInputStream(socket.getInputStream());
         this.outputStream = new BufferedOutputStream(socket.getOutputStream());

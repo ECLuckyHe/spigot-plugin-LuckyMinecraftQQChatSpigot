@@ -22,7 +22,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerMessageEvent(AsyncPlayerChatEvent e) {
         String formatMessage = ConfigOperation.getFormatMessage();
-        if (formatMessage != null && (!formatMessage.equals(""))) {
+        if (formatMessage != null && (!formatMessage.equals("")) && clientMainThread.isAlive()) {
             clientMainThread.addSendQueue(ConnectionPacketSendUtil.getMessagePacket(
                     e.getPlayer().getName(),
                     e.getMessage()
@@ -32,11 +32,8 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onPlayerJoinEvent(PlayerJoinEvent e) {
-        System.out.println("e = " + e);
-        System.out.println("e.getPlayer().getName() = " + e.getPlayer().getName());
-
         String formatJoin = ConfigOperation.getFormatJoin();
-        if (formatJoin != null && (!formatJoin.equals(""))) {
+        if (formatJoin != null && (!formatJoin.equals("")) && clientMainThread.isAlive()) {
             clientMainThread.addSendQueue(ConnectionPacketSendUtil.getJoinPacket(e.getPlayer().getName()));
         }
     }
@@ -44,7 +41,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerQuitEvent(PlayerQuitEvent e) {
         String formatQuit = ConfigOperation.getFormatQuit();
-        if (formatQuit != null && (!formatQuit.equals(""))) {
+        if (formatQuit != null && (!formatQuit.equals("")) && clientMainThread.isAlive()) {
             clientMainThread.addSendQueue(ConnectionPacketSendUtil.getQuitPacket(e.getPlayer().getName()));
         }
     }
@@ -52,7 +49,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerDeathEvent(PlayerDeathEvent e) {
         String formatDeath = ConfigOperation.getFormatDeath();
-        if (formatDeath != null && (!formatDeath.equals(""))) {
+        if (formatDeath != null && (!formatDeath.equals("")) && clientMainThread.isAlive()) {
             clientMainThread.addSendQueue(ConnectionPacketSendUtil.getDeathMessagePacket(e.getEntity().getName(), e.getDeathMessage()));
         }
     }
@@ -60,7 +57,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerKickEvent(PlayerKickEvent e) {
         String formatKick = ConfigOperation.getFormatKick();
-        if (formatKick != null && (!formatKick.equals(""))) {
+        if (formatKick != null && (!formatKick.equals("")) && clientMainThread.isAlive()) {
             clientMainThread.addSendQueue(ConnectionPacketSendUtil.getKickMessagePacket(e.getPlayer().getName(), e.getReason()));
         }
     }
