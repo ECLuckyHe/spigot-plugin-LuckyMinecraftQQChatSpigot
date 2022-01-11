@@ -1,3 +1,7 @@
 name: LuckyMinecraftQQChatSpigot
 version: 1.0
 main: fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.LuckyMinecraftQQChatSpigot
+commands:
+  mcchat:
+    description: 与控制MC和BOT之间的连接相关
+    usage: /mcchat

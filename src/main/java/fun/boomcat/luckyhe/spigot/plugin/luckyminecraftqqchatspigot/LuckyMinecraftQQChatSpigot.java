@@ -1,5 +1,6 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot;
 
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.command.McChat;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.ConfigOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.listener.PlayerListener;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.thread.ClientMainThread;
@@ -17,10 +18,12 @@ public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
 
     @Override
     public void onEnable() {
-
         saveDefaultConfig();
+        reloadConfig();
         ConfigOperation.initFileConfiguration(getConfig());
         MinecraftMessageUtil.init(getServer(), getLogger());
+
+        this.getCommand("mcchat").setExecutor(new McChat(this));
 
         if (clientMainThread == null) {
             clientMainThread = new ClientMainThread(getServer(), getLogger());

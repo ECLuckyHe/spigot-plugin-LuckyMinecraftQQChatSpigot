@@ -100,7 +100,7 @@ public class ClientMainThread extends Thread {
                         );
                         MinecraftMessageUtil.sendMinecraftMessage(
                                 MinecraftFontStyleCode.LIGHT_PURPLE + "[LuckyChat] " +
-                                        MinecraftFontStyleCode.RED + "请修改配置文件后执行/reload指令"
+                                        MinecraftFontStyleCode.RED + "请修改配置文件后执行/mcchat reload指令"
                         );
                         isRunning = false;
                         socket.close();
