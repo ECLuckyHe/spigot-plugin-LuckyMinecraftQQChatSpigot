@@ -229,8 +229,12 @@ public class MinecraftConnectionThread extends Thread {
                     Thread.sleep(1000L);
 
 //                    如果超过心跳包发送频率+5秒以上，则断开连接
-                    if (heartbeatGap + 5 < heartbeatCount) {
+                    if (3 * heartbeatGap + 5 < heartbeatCount) {
                         logWarning(threadName, "已经" + heartbeatCount + "秒未接收到心跳包，开始关闭连接（服务端发送心跳包频率为" + heartbeatGap + "秒）");
+                        MinecraftMessageUtil.sendMinecraftMessage(
+                                MinecraftFontStyleCode.LIGHT_PURPLE + "[LuckyChat] " +
+                                        MinecraftFontStyleCode.RED + "已经" + heartbeatCount + "秒未接收到心跳包，关闭连接"
+                        );
                         socket.close();
                     }
 

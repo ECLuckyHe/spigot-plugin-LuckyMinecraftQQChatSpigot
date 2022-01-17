@@ -126,7 +126,7 @@ public class ClientMainThread extends Thread {
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
+//                e.printStackTrace();
                 logger.warning("Socket连接失败，" + retryTimes + "秒后再次尝试");
                 try {
                     Thread.sleep(1000L * retryTimes);
