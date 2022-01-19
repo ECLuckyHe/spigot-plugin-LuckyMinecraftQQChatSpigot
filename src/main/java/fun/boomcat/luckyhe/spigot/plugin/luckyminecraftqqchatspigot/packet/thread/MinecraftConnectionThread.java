@@ -7,9 +7,7 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datat
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ByteUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketReceiveUtil;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.AsyncCaller;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftFontStyleCode;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.*;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
@@ -25,7 +23,7 @@ public class MinecraftConnectionThread extends Thread {
     private final String serverName = ConfigOperation.getServerName();
     private final long sessionId = ConfigOperation.getBotSessionId();
     private final String sessionName;
-    private final int heartbeatGap;
+    private final int heartbeatInterval;
     private int heartbeatCount = 0;
 
     private final Queue<Packet> sendQueue = new ConcurrentLinkedQueue<>();
@@ -181,10 +179,11 @@ public class MinecraftConnectionThread extends Thread {
                                 VarIntString exitMsg = new VarIntString(packet.getData());
                                 logInfo(threadName, "对方要求断开连接，原因：" + exitMsg.getContent());
 
-                                MinecraftMessageUtil.sendMinecraftMessage(
-                                        MinecraftFontStyleCode.LIGHT_PURPLE + "[LuckyChat] " +
-                                                MinecraftFontStyleCode.RED + "服务端要求断开连接，原因：" + exitMsg.getContent()
-                                );
+                                MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
+                                        ConfigOperation.getInfoOnBotRequestClose(),
+                                        FormatPlaceholder.REASON,
+                                        exitMsg.getContent()
+                                ));
 
                                 isConnected = false;
                                 socket.close();
@@ -229,12 +228,14 @@ public class MinecraftConnectionThread extends Thread {
                     Thread.sleep(1000L);
 
 //                    如果超过心跳包发送频率+5秒以上，则断开连接
-                    if (3 * heartbeatGap + 5 < heartbeatCount) {
-                        logWarning(threadName, "已经" + heartbeatCount + "秒未接收到心跳包，开始关闭连接（服务端发送心跳包频率为" + heartbeatGap + "秒）");
-                        MinecraftMessageUtil.sendMinecraftMessage(
-                                MinecraftFontStyleCode.LIGHT_PURPLE + "[LuckyChat] " +
-                                        MinecraftFontStyleCode.RED + "已经" + heartbeatCount + "秒未接收到心跳包，关闭连接"
-                        );
+                    if (3 * heartbeatInterval + 5 < heartbeatCount) {
+                        logWarning(threadName, "已经" + heartbeatCount + "秒未接收到心跳包，开始关闭连接（服务端发送心跳包频率为" + heartbeatInterval + "秒）");
+                        MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
+                                ConfigOperation.getInfoOnPingFail(),
+                                FormatPlaceholder.WAIT_TIME,
+                                String.valueOf(heartbeatCount)
+                        ));
+
                         socket.close();
                     }
 
@@ -283,7 +284,7 @@ public class MinecraftConnectionThread extends Thread {
         this.socket = socket;
         this.logger = logger;
         this.sessionName = sessionName;
-        this.heartbeatGap = heartbeatGap;
+        this.heartbeatInterval = heartbeatGap;
 
         this.inputStream = new BufferedInputStream(socket.getInputStream());
         this.outputStream = new BufferedOutputStream(socket.getOutputStream());

@@ -52,4 +52,32 @@ public class ConfigOperation {
     public static String getFormatKick() {
         return config.getString("format.kick");
     }
+
+    public static String getInfoOnEnable() {
+        return config.getString("info.onEnable");
+    }
+
+    public static String getInfoOnDisable() {
+        return config.getString("info.onDisable");
+    }
+
+    public static String getInfoOnConnected() {
+        return config.getString("info.onConnected");
+    }
+
+    public static String getInfoOnPingFail() {
+        return config.getString("info.onPingFail");
+    }
+
+    public static String getInfoOnConnectionDisconnect() {
+        return config.getString("info.onConnectionDisconnect");
+    }
+
+    public static String getInfoOnRequestError() {
+        return config.getString("info.onRequestError");
+    }
+
+    public static String getInfoOnBotRequestClose() {
+        return config.getString("info.onBotRequestClose");
+    }
 }

@@ -9,12 +9,11 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.excep
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.exception.VarLongTooBigException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.QqFormatPlaceholder;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.FormatPlaceholder;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.ReplacePlaceholderUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
 public class ConnectionPacketReceiveUtil {
@@ -57,21 +56,21 @@ public class ConnectionPacketReceiveUtil {
 
         MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
                 formatString,
-                QqFormatPlaceholder.GROUP_ID,
+                FormatPlaceholder.GROUP_ID,
                 String.valueOf(groupId.getValue()),
-                QqFormatPlaceholder.GROUP_NAME,
+                FormatPlaceholder.GROUP_NAME,
                 groupName.getContent(),
-                QqFormatPlaceholder.GROUP_NICKNAME,
+                FormatPlaceholder.GROUP_NICKNAME,
                 groupNickname.getContent(),
-                QqFormatPlaceholder.SENDER_ID,
+                FormatPlaceholder.SENDER_ID,
                 String.valueOf(senderId.getValue()),
-                QqFormatPlaceholder.SENDER_NICKNAME,
+                FormatPlaceholder.SENDER_NICKNAME,
                 senderNickname.getContent(),
-                QqFormatPlaceholder.SENDER_GROUP_NICKNAME,
+                FormatPlaceholder.SENDER_GROUP_NICKNAME,
                 senderGroupNickname.getContent(),
-                QqFormatPlaceholder.MESSAGE,
+                FormatPlaceholder.MESSAGE,
                 message.getContent(),
-                QqFormatPlaceholder.SESSION_NAME,
+                FormatPlaceholder.SESSION_NAME,
                 sessionName
         ));
     }

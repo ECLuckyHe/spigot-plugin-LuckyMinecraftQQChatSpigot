@@ -42,12 +42,10 @@ public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
             e.printStackTrace();
         }
 
-//        不知道原因，但这句语句不运行
+//        不知道原因，但这句语句在reload后不运行，但mcchat reload可以运行
         MinecraftMessageUtil.sendMinecraftMessage(
-                MinecraftFontStyleCode.LIGHT_PURPLE + "[LuckyChat] " +
-                        MinecraftFontStyleCode.GOLD + "插件被加载"
+                ConfigOperation.getInfoOnEnable()
         );
-
     }
 
     @Override
@@ -61,8 +59,7 @@ public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
         getLogger().info("关闭连接线程成功");
 
         MinecraftMessageUtil.sendMinecraftMessage(
-                MinecraftFontStyleCode.LIGHT_PURPLE + "[LuckyChat] " +
-                        MinecraftFontStyleCode.GOLD + "插件被卸载"
+                ConfigOperation.getInfoOnDisable()
         );
     }
 }
