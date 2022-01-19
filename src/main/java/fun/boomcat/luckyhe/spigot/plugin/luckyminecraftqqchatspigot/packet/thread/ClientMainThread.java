@@ -7,7 +7,6 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketReceiveUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketSendUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.FormatPlaceholder;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftFontStyleCode;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.ReplacePlaceholderUtil;
 import org.bukkit.Server;
@@ -74,7 +73,7 @@ public class ClientMainThread extends Thread {
                 Packet packet = ConnectionPacketReceiveUtil.getPacket(inputStream);
 
                 VarIntString sessionName = null;
-                VarIntString address;
+                VarIntString address = null;
                 VarInt heartbeatInterval = null;
 
                 switch (packet.getId().getValue()) {
@@ -87,6 +86,8 @@ public class ClientMainThread extends Thread {
 
                         MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
                                 ConfigOperation.getInfoOnConnected(),
+                                FormatPlaceholder.SERVER_NAME,
+                                ConfigOperation.getServerName(),
                                 FormatPlaceholder.SESSION_ID,
                                 String.valueOf(ConfigOperation.getBotSessionId()),
                                 FormatPlaceholder.SESSION_NAME,
@@ -106,6 +107,8 @@ public class ClientMainThread extends Thread {
 
                         MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
                                 ConfigOperation.getInfoOnRequestError(),
+                                FormatPlaceholder.SERVER_NAME,
+                                ConfigOperation.getServerName(),
                                 FormatPlaceholder.ERROR_MESSAGE,
                                 errorMsg.getContent()
                         ));
@@ -115,7 +118,7 @@ public class ClientMainThread extends Thread {
                 }
 
 
-                minecraftThread = new MinecraftConnectionThread(server, socket, logger, sessionName.getContent(), heartbeatInterval.getValue());
+                minecraftThread = new MinecraftConnectionThread(server, socket, logger, sessionName.getContent(), heartbeatInterval.getValue(), address.getContent());
                 minecraftThread.start();
 
 //                循环直到线程结束
@@ -125,7 +128,19 @@ public class ClientMainThread extends Thread {
 
                 if (isRunning) {
                     logger.warning("连接已断开，" + retryTimes + "秒后再次尝试");
-                    MinecraftMessageUtil.sendMinecraftMessage(ConfigOperation.getInfoOnConnectionDisconnect());
+                    MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
+                            ConfigOperation.getInfoOnConnectionDisconnect(),
+                            FormatPlaceholder.SERVER_NAME,
+                            ConfigOperation.getServerName(),
+                            FormatPlaceholder.SESSION_ID,
+                            String.valueOf(minecraftThread.getSessionId()),
+                            FormatPlaceholder.SESSION_NAME,
+                            minecraftThread.getSessionName(),
+                            FormatPlaceholder.PING_INTERVAL,
+                            String.valueOf(minecraftThread.getHeartbeatInterval()),
+                            FormatPlaceholder.REMOTE_ADDRESS,
+                            minecraftThread.getRemoteAddress()
+                    ));
                     Thread.sleep(1000L * retryTimes);
                 }
 

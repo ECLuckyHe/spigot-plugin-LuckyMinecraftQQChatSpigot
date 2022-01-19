@@ -21,4 +21,6 @@ public class FormatPlaceholder {
     public static String ERROR_MESSAGE = "%errorMessage%";
 
     public static String REASON = "%reason%";
+
+    public static String SERVER_NAME = "%serverName%";
 }

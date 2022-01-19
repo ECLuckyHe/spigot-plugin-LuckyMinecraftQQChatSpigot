@@ -142,6 +142,20 @@ format:
   kick: "[%serverName%] %playerName% 被踢了，因为 %kickReason%"
   ######################################################################
 
+
+# 与在线玩家列表相关的内容
+onlinePlayers:
+  # 用户在同会话群内发送以下消息中的任意一条时，返回在线人数列表
+  command:
+    - "/list"
+    - "/在线"
+
+  # 获取在线玩家列表返回内容
+  response:
+    # 返回的在线人数列表的格式
+    # %%
+    format: ""
+
 #####################以下内容为非必要修改选项#####################
 
 # 插件的提示消息（如意外断开连接，通知提醒等）
@@ -155,25 +169,29 @@ info:
   # 插件被卸载时发送此消息
   onDisable: "§d[LuckyChat] §6插件被卸载"
   #
-  # 会话连接成功时发送此消息
+  # 请求被bot端拒绝时时发送此消息
+  # 此后将不会再发送连接请求，并要求输入/mcchat reload重新加载配置文件
+  # %errorMessage%    bot端返回的错误信息
+  onRequestError: "§d[LuckyChat] §c连接失败，错误信息：%errorMessage%\n§d[LuckyChat] §c请修改配置文件后执行/mcchat reload指令"
+  #
+  ##############################################################
+  # 以下这些消息中可以使用的占位符：
   # %sessionId%    会话号
   # %sessionName%    会话名
   # %pingInterval%    心跳包间隔（数字，单位秒）
   # %remoteAddress% 远程地址（实际为bot端收到的连接地址，即这台主机的ip地址）
+  #
+  # 会话连接成功时发送此消息
   onConnected: "§d[LuckyChat] §6已连接到会话 §a%sessionName%"
   #
   # 未收到心跳包时发送此消息，然后断开连接
   # %waitTime%    等待时间（数字，单位秒）
   onPingFail: "§d[LuckyChat] §c已经%waitTime%秒未接收到心跳包，关闭连接"
   #
-  # 断开连接时发送此消息，接着重新尝试连接
-  onConnectionDisconnect: "§d[LuckyChat] §c连接已断开，稍后重新尝试连接"
-  #
-  # 请求被bot端拒绝时时发送此消息
-  # 此后将不会再发送连接请求，并要求输入/mcchat reload重新加载配置文件
-  # %errorMessage%    bot端返回的错误信息
-  onRequestError: "§d[LuckyChat] §c连接失败，错误信息：%errorMessage%\n§d[LuckyChat] §c请修改配置文件后执行/mcchat reload指令"
-  #
   # 当bot端要求断开连接时发送此消息，接着断开连接
   # %reason% bot端要求断开连接的原因
   onBotRequestClose: "§d[LuckyChat] §cbot要求断开连接，原因：%reason%"
+  #
+  # 断开连接时发送此消息，接着重新尝试连接
+  onConnectionDisconnect: "§d[LuckyChat] §c连接已断开，稍后重新尝试连接"
+  ##############################################################

@@ -25,6 +25,7 @@ public class MinecraftConnectionThread extends Thread {
     private final String sessionName;
     private final int heartbeatInterval;
     private int heartbeatCount = 0;
+    private final String remoteAddress;
 
     private final Queue<Packet> sendQueue = new ConcurrentLinkedQueue<>();
     private final Queue<Packet> receiveQueue = new ConcurrentLinkedQueue<>();
@@ -62,6 +63,22 @@ public class MinecraftConnectionThread extends Thread {
 
     public boolean isStop() {
         return isStop;
+    }
+
+    public long getSessionId() {
+        return sessionId;
+    }
+
+    public String getSessionName() {
+        return sessionName;
+    }
+
+    public int getHeartbeatInterval() {
+        return heartbeatInterval;
+    }
+
+    public String getRemoteAddress() {
+        return remoteAddress;
     }
 
     @Override
@@ -181,6 +198,16 @@ public class MinecraftConnectionThread extends Thread {
 
                                 MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
                                         ConfigOperation.getInfoOnBotRequestClose(),
+                                        FormatPlaceholder.SERVER_NAME,
+                                        ConfigOperation.getServerName(),
+                                        FormatPlaceholder.SESSION_ID,
+                                        String.valueOf(sessionId),
+                                        FormatPlaceholder.SERVER_NAME,
+                                        sessionName,
+                                        FormatPlaceholder.PING_INTERVAL,
+                                        String.valueOf(heartbeatInterval),
+                                        FormatPlaceholder.REMOTE_ADDRESS,
+                                        remoteAddress,
                                         FormatPlaceholder.REASON,
                                         exitMsg.getContent()
                                 ));
@@ -232,6 +259,16 @@ public class MinecraftConnectionThread extends Thread {
                         logWarning(threadName, "已经" + heartbeatCount + "秒未接收到心跳包，开始关闭连接（服务端发送心跳包频率为" + heartbeatInterval + "秒）");
                         MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
                                 ConfigOperation.getInfoOnPingFail(),
+                                FormatPlaceholder.SERVER_NAME,
+                                ConfigOperation.getServerName(),
+                                FormatPlaceholder.SESSION_NAME,
+                                sessionName,
+                                FormatPlaceholder.SESSION_ID,
+                                String.valueOf(sessionId),
+                                FormatPlaceholder.PING_INTERVAL,
+                                String.valueOf(heartbeatInterval),
+                                FormatPlaceholder.REMOTE_ADDRESS,
+                                remoteAddress,
                                 FormatPlaceholder.WAIT_TIME,
                                 String.valueOf(heartbeatCount)
                         ));
@@ -279,12 +316,13 @@ public class MinecraftConnectionThread extends Thread {
         isStop = true;
     }
 
-    public MinecraftConnectionThread(Server server, Socket socket, Logger logger, String sessionName, int heartbeatGap) throws IOException {
+    public MinecraftConnectionThread(Server server, Socket socket, Logger logger, String sessionName, int heartbeatInterval, String remoteAddress) throws IOException {
         this.server = server;
         this.socket = socket;
         this.logger = logger;
         this.sessionName = sessionName;
-        this.heartbeatInterval = heartbeatGap;
+        this.heartbeatInterval = heartbeatInterval;
+        this.remoteAddress = remoteAddress;
 
         this.inputStream = new BufferedInputStream(socket.getInputStream());
         this.outputStream = new BufferedOutputStream(socket.getOutputStream());
