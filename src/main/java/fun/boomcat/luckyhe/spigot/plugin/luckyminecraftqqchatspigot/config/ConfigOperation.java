@@ -2,6 +2,8 @@ package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config;
 
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.util.List;
+
 public class ConfigOperation {
     private static FileConfiguration config;
 
@@ -79,5 +81,17 @@ public class ConfigOperation {
 
     public static String getInfoOnBotRequestClose() {
         return config.getString("info.onBotRequestClose");
+    }
+
+    public static List<String> getOnlinePlayersCommands() {
+        return config.getStringList("onlinePlayers.command");
+    }
+
+    public static String getOnlinePlayersResponseFormat() {
+        return config.getString("onlinePlayers.response.format");
+    }
+
+    public static String getOnlinePlayersResponseSeparator() {
+        return config.getString("onlinePlayers.response.separator");
     }
 }

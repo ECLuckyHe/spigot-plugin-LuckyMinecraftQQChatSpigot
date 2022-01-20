@@ -5,6 +5,8 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datat
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarLong;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
 
+import java.util.List;
+
 public class ConnectionPacketSendUtil {
     public static Packet getConnectPacket(
             long sessionId,
@@ -13,9 +15,13 @@ public class ConnectionPacketSendUtil {
             String quitFormatString,
             String msgFormatString,
             String deathFormatString,
-            String kickFormatString
+            String kickFormatString,
+            List<String> onlinePlayersCommands,
+            String onlinePlayersCommandResponseFormat,
+            String onlinePlayersCommandResponseSeparator
     ) {
         VarInt packetId = new VarInt(0x00);
+
         VarLong si = new VarLong(sessionId);
         VarIntString sn = new VarIntString(serverName);
         VarIntString jfs = new VarIntString(joinFormatString);
@@ -24,22 +30,40 @@ public class ConnectionPacketSendUtil {
         VarIntString dfs = new VarIntString(deathFormatString);
         VarIntString kfs = new VarIntString(kickFormatString);
 
+        VarInt opcc = new VarInt(onlinePlayersCommands.size());
+        VarIntString[] opccs = new VarIntString[opcc.getValue()];
+        for (int i = 0; i < opccs.length; i++) {
+            opccs[i] = new VarIntString(onlinePlayersCommands.get(i));
+        }
+        VarIntString opcrf = new VarIntString(onlinePlayersCommandResponseFormat);
+        VarIntString opcrs = new VarIntString(onlinePlayersCommandResponseSeparator);
+
+        int totalLengthInt = packetId.getBytesLength() + si.getBytesLength() + sn.getBytesLength() +
+                jfs.getBytesLength() + qfs.getBytesLength() + mfs.getBytesLength() + dfs.getBytesLength() +
+                kfs.getBytesLength() + opcc.getBytesLength() + opcrf.getBytesLength() + opcrs.getBytesLength();
+        for (VarIntString opcca : opccs) {
+            totalLengthInt += opcca.getBytesLength();
+        }
+
+        byte[] data = ByteUtil.byteMergeAll(
+                si.getBytes(),
+                sn.getBytes(),
+                jfs.getBytes(),
+                qfs.getBytes(),
+                mfs.getBytes(),
+                dfs.getBytes(),
+                kfs.getBytes(),
+                opcc.getBytes()
+        );
+        for (VarIntString opcca : opccs) {
+            data = ByteUtil.byteMergeAll(data, opcca.getBytes());
+        }
+        data = ByteUtil.byteMergeAll(data, opcrf.getBytes(), opcrs.getBytes());
+
         return new Packet(
-                new VarInt(
-                        packetId.getBytesLength() + si.getBytesLength() + sn.getBytesLength() +
-                                jfs.getBytesLength() + qfs.getBytesLength() + mfs.getBytesLength() +
-                                dfs.getBytesLength() + kfs.getBytesLength()
-                ),
+                new VarInt(totalLengthInt),
                 packetId,
-                ByteUtil.byteMergeAll(
-                        si.getBytes(),
-                        sn.getBytes(),
-                        jfs.getBytes(),
-                        qfs.getBytes(),
-                        mfs.getBytes(),
-                        dfs.getBytes(),
-                        kfs.getBytes()
-                )
+                data
         );
     }
 

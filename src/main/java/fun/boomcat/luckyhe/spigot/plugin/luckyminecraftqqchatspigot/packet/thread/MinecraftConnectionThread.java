@@ -170,8 +170,6 @@ public class MinecraftConnectionThread extends Thread {
                                 break;
                             case 0x21:
 //                                收到要求提供玩家在线信息数据的数据包
-                                VarLong groupId = new VarLong(packet.getData());
-
                                 VarInt onlinePlayerPacketId = new VarInt(0x21);
                                 Collection<? extends Player> onlinePlayerList = MinecraftMessageUtil.getOnlinePlayerList();
                                 VarInt onlinePlayers = new VarInt(onlinePlayerList.size());
@@ -186,9 +184,9 @@ public class MinecraftConnectionThread extends Thread {
                                 byte[] mergeAll = ByteUtil.byteMergeAll(onlinePlayerData);
 
                                 sendQueue.add(new Packet(
-                                        new VarInt(onlinePlayerPacketId.getBytesLength() + groupId.getBytesLength() + onlinePlayers.getBytesLength() + mergeAll.length),
+                                        new VarInt(onlinePlayerPacketId.getBytesLength() + onlinePlayers.getBytesLength() + mergeAll.length),
                                         onlinePlayerPacketId,
-                                        ByteUtil.byteMergeAll(groupId.getBytes(), onlinePlayers.getBytes(), mergeAll)
+                                        ByteUtil.byteMergeAll(onlinePlayers.getBytes(), mergeAll)
                                 ));
                                 break;
                             case 0xF0:

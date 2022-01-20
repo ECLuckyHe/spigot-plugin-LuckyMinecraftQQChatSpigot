@@ -65,7 +65,10 @@ public class ClientMainThread extends Thread {
                         ConfigOperation.getFormatQuit(),
                         ConfigOperation.getFormatMessage(),
                         ConfigOperation.getFormatDeath(),
-                        ConfigOperation.getFormatKick()
+                        ConfigOperation.getFormatKick(),
+                        ConfigOperation.getOnlinePlayersCommands(),
+                        ConfigOperation.getOnlinePlayersResponseFormat(),
+                        ConfigOperation.getOnlinePlayersResponseSeparator()
                 ).getBytes());
 
 //                睡眠一秒，确保对方已收到

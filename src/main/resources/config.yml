@@ -153,8 +153,11 @@ onlinePlayers:
   # 获取在线玩家列表返回内容
   response:
     # 返回的在线人数列表的格式
-    # %%
-    format: ""
+    # %players%    玩家列表
+    # %count%    人数（数字）
+    format: "[%serverName%] 当前%count%名玩家在线\n%players%"
+    # 玩家列表的分隔符（最后一名玩家后面不补充分隔符）
+    separator: "\n"
 
 #####################以下内容为非必要修改选项#####################
 
