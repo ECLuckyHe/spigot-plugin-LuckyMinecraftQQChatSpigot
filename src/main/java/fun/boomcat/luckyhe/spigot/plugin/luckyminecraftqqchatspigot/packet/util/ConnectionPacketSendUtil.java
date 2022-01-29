@@ -3,8 +3,15 @@ package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarInt;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarIntString;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarLong;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.exception.VarIntStringLengthNotMatchException;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.exception.VarIntTooBigException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
+import org.bukkit.entity.Player;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 
 public class ConnectionPacketSendUtil {
@@ -18,7 +25,9 @@ public class ConnectionPacketSendUtil {
             String kickFormatString,
             List<String> onlinePlayersCommands,
             String onlinePlayersCommandResponseFormat,
-            String onlinePlayersCommandResponseSeparator
+            String onlinePlayersCommandResponseSeparator,
+            String rconCommandPrefix,
+            String rconCommandResultFormat
     ) {
         VarInt packetId = new VarInt(0x00);
 
@@ -38,9 +47,13 @@ public class ConnectionPacketSendUtil {
         VarIntString opcrf = new VarIntString(onlinePlayersCommandResponseFormat);
         VarIntString opcrs = new VarIntString(onlinePlayersCommandResponseSeparator);
 
+        VarIntString rcp = new VarIntString(rconCommandPrefix);
+        VarIntString rcrf = new VarIntString(rconCommandResultFormat);
+
         int totalLengthInt = packetId.getBytesLength() + si.getBytesLength() + sn.getBytesLength() +
                 jfs.getBytesLength() + qfs.getBytesLength() + mfs.getBytesLength() + dfs.getBytesLength() +
-                kfs.getBytesLength() + opcc.getBytesLength() + opcrf.getBytesLength() + opcrs.getBytesLength();
+                kfs.getBytesLength() + opcc.getBytesLength() + opcrf.getBytesLength() + opcrs.getBytesLength() +
+                rcp.getBytesLength() + rcrf.getBytesLength();
         for (VarIntString opcca : opccs) {
             totalLengthInt += opcca.getBytesLength();
         }
@@ -58,7 +71,13 @@ public class ConnectionPacketSendUtil {
         for (VarIntString opcca : opccs) {
             data = ByteUtil.byteMergeAll(data, opcca.getBytes());
         }
-        data = ByteUtil.byteMergeAll(data, opcrf.getBytes(), opcrs.getBytes());
+        data = ByteUtil.byteMergeAll(
+                data,
+                opcrf.getBytes(),
+                opcrs.getBytes(),
+                rcp.getBytes(),
+                rcrf.getBytes()
+        );
 
         return new Packet(
                 new VarInt(totalLengthInt),
@@ -121,4 +140,78 @@ public class ConnectionPacketSendUtil {
                 infoString.getBytes()
         );
     }
+
+    public static Packet getPongPacket(long ping) {
+        VarInt packetId = new VarInt(0x20);
+        VarLong pong = new VarLong(ping);
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + pong.getBytesLength()),
+                packetId,
+                pong.getBytes()
+        );
+    }
+
+    public static Packet getOnlinePlayersPacket() throws VarIntStringLengthNotMatchException, IOException, VarIntTooBigException {
+        VarInt packetId = new VarInt(0x21);
+        Collection<? extends Player> onlinePlayerList =
+                MinecraftMessageUtil.getOnlinePlayerList();
+        VarInt onlinePlayersCount = new VarInt(onlinePlayerList.size());
+        byte[][] onlinePlayerData = new byte[onlinePlayersCount.getValue()][];
+
+        int index = 0;
+        for (Player player : onlinePlayerList) {
+            onlinePlayerData[index] = new VarIntString(player.getName()).getBytes();
+            index += 1;
+        }
+
+        byte[] mergeAll = ByteUtil.byteMergeAll(onlinePlayerData);
+
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + onlinePlayersCount.getBytesLength() + mergeAll.length),
+                packetId,
+                ByteUtil.byteMergeAll(onlinePlayersCount.getBytes(), mergeAll)
+        );
+    }
+
+    public static Packet getRconCommandRefusedPacket(boolean rconEnable) {
+        VarInt packetId = new VarInt(0x22);
+        VarIntString commandResult;
+        if (!rconEnable) {
+            commandResult = new VarIntString("MC服务端未开启RCON指令操作，指令执行失败");
+        } else {
+            commandResult = new VarIntString("无操作权限");
+        }
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                packetId,
+                commandResult.getBytes()
+        );
+    }
+
+    public static Packet getRconCommandResultPacket(boolean rconEnable, String command) {
+        VarInt packetId = new VarInt(0x22);
+        VarIntString commandResult;
+        if (!rconEnable) {
+            commandResult = new VarIntString("MC服务端未开启RCON指令操作，指令执行失败");
+        } else {
+            if (command.contains("reload")) {
+                commandResult = new VarIntString("拒绝执行具有reload的指令");
+            } else {
+//                执行指令
+                try {
+                    commandResult = new VarIntString(RconUtil.sendMcCommad(command));
+                } catch (Exception e) {
+                    commandResult = new VarIntString("指令执行失败");
+                }
+            }
+        }
+
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                packetId,
+                commandResult.getBytes()
+        );
+    }
+
+
 }

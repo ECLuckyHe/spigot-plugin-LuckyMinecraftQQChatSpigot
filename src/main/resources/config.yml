@@ -68,12 +68,12 @@
 # §e 黄
 # §f 白
 
-# §k　混淆
-# §l　粗体
-# §m　删除线
-# §n　下划线
-# §o　斜体
-# §r　恢复默认
+# §k 混淆
+# §l 粗体
+# §m 删除线
+# §n 下划线
+# §o 斜体
+# §r 恢复默认
 ######################################################################
 
 
@@ -158,6 +158,46 @@ onlinePlayers:
     format: "[%serverName%] 当前%count%名玩家在线\n%players%"
     # 玩家列表的分隔符（最后一名玩家后面不补充分隔符）
     separator: "\n"
+
+
+# 群内发送MC端指令相关
+# 在群内发送指令可以直接操作服务器
+# rcon：MC服务端提供的一种指令协议，通过该协议，op可以不用经过控制台就能发送指令
+# rcon指定了连接端口和连接密码，请妥善保存
+# 此插件所用的rcon均为本地直接连接，如需要防止外人连接，请设置rcon端口的防火墙
+rconCommand:
+  # 总开关
+  # 若为false则不启用群内发送MC指令
+  # 若为true则启用群内发送MC指令
+  # 开启前请务必确认server.properties里的enable-rcon=true
+  # 并将rcon.port的内容填入以下port属性中
+  # rcon.password的内容填入以下password中
+  # 否则将无法发送MC指令
+  # 至于如何设定op的QQ号，请在游戏内执行/mcchat指令
+  enabled: false
+
+  # rcon端口
+  port: 25575
+
+  # rcon密码
+  password: "abcdefg"
+
+  # 指令格式前缀
+  # 当op在群内发送的消息中包含以下前缀时，前缀后面的内容为指令内容
+  prefix: "[%serverName%]/"
+
+  # 指令执行结果格式
+  # 该内容将被发送到群里
+  # %result%    执行结果
+  resultFormat: "[%serverName%] 执行结果：\n%result%"
+
+
+# 公告相关
+# 当bot方向该MC端发送公告时，将以以下格式发送到游戏中
+# %announcement%    发送公告内容
+# %senderNickname%    发送者昵称
+# %senderId%    发送者QQ
+announcementFormat: "§d---------------公告---------------\n§6%announcement%\n发布者：%senderNickname%（QQ %senderId%）"
 
 #####################以下内容为非必要修改选项#####################
 

@@ -2,6 +2,7 @@ package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot;
 
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.command.McChat;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.ConfigOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.DataOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.listener.PlayerListener;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.thread.ClientMainThread;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.FormatPlaceholder;
@@ -10,12 +11,19 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.Minecra
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.ReplacePlaceholderUtil;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
 
     private ClientMainThread clientMainThread;
     @Override
     public void onLoad() {
-
+        try {
+            DataOperation.initDataPath(getDataFolder(), getResource("data.yml"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

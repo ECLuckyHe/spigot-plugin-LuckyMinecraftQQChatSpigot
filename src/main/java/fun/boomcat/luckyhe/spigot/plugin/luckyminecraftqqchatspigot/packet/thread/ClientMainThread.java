@@ -68,7 +68,9 @@ public class ClientMainThread extends Thread {
                         ConfigOperation.getFormatKick(),
                         ConfigOperation.getOnlinePlayersCommands(),
                         ConfigOperation.getOnlinePlayersResponseFormat(),
-                        ConfigOperation.getOnlinePlayersResponseSeparator()
+                        ConfigOperation.getOnlinePlayersResponseSeparator(),
+                        ConfigOperation.getRconCommandPrefix(),
+                        ConfigOperation.getRconCommandResultFormat()
                 ).getBytes());
 
 //                睡眠一秒，确保对方已收到

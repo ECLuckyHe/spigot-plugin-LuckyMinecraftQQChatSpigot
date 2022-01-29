@@ -1,7 +1,5 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util;
 
-import org.bukkit.ChatColor;
-
 public class MinecraftFontStyleCode {
 //    颜色代码
 //    向游戏中发送消息时若出现以下代码，则在此之后的所有文本内容都将成为该种风格

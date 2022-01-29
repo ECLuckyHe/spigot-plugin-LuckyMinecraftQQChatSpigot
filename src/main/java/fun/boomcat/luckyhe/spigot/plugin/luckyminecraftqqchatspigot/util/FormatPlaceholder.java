@@ -23,4 +23,6 @@ public class FormatPlaceholder {
     public static String REASON = "%reason%";
 
     public static String SERVER_NAME = "%serverName%";
+
+    public static String ANNOUNCEMENT = "%announcement%";
 }

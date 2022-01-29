@@ -1,18 +1,22 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.thread;
 
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.ConfigOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.DataOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarInt;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarIntString;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarLong;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ByteUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketReceiveUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketSendUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.RconUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.*;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -26,6 +30,8 @@ public class MinecraftConnectionThread extends Thread {
     private final int heartbeatInterval;
     private int heartbeatCount = 0;
     private final String remoteAddress;
+
+    private final boolean rconEnable = ConfigOperation.getRconCommandEnabled();
 
     private final Queue<Packet> sendQueue = new ConcurrentLinkedQueue<>();
     private final Queue<Packet> receiveQueue = new ConcurrentLinkedQueue<>();
@@ -97,7 +103,7 @@ public class MinecraftConnectionThread extends Thread {
 
                         if (packet.getId().getValue() == 0xF0) {
                             logInfo(threadName, "发送关闭包，内容" + new VarIntString(packet.getData()).getContent());
-                            isConnected  = false;
+                            isConnected = false;
                             socket.close();
                         }
                     }
@@ -160,34 +166,53 @@ public class MinecraftConnectionThread extends Thread {
                             case 0x20:
 //                                回应心跳包
                                 VarLong ping = new VarLong(packet.getData());
-                                VarInt pongPacketId = new VarInt(0x20);
-                                sendQueue.add(new Packet(
-                                        new VarInt(pongPacketId.getBytesLength() + ping.getBytesLength()),
-                                        pongPacketId,
-                                        ping.getBytes()
-                                ));
+                                sendQueue.add(ConnectionPacketSendUtil.getPongPacket(ping.getValue()));
                                 heartbeatCount = 0;
                                 break;
                             case 0x21:
 //                                收到要求提供玩家在线信息数据的数据包
-                                VarInt onlinePlayerPacketId = new VarInt(0x21);
-                                Collection<? extends Player> onlinePlayerList = MinecraftMessageUtil.getOnlinePlayerList();
-                                VarInt onlinePlayers = new VarInt(onlinePlayerList.size());
-                                byte[][] onlinePlayerData = new byte[onlinePlayers.getValue()][];
+                                sendQueue.add(ConnectionPacketSendUtil.getOnlinePlayersPacket());
+                                break;
+                            case 0x22:
+//                                指令
+                                int commandIndex = 0;
+                                VarLong commandSenderId = new VarLong(packet.getData());
+                                commandIndex += commandSenderId.getBytesLength();
+                                VarIntString command = new VarIntString(Arrays.copyOfRange(packet.getData(), commandIndex, packet.getData().length));
 
-                                int index = 0;
-                                for (Player player : onlinePlayerList) {
-                                    onlinePlayerData[index] = new VarIntString(player.getName()).getBytes();
-                                    index += 1;
+
+                                if (!DataOperation.isRconCommandOpIdExist(commandSenderId.getValue())) {
+                                    sendQueue.add(ConnectionPacketSendUtil.getRconCommandRefusedPacket(rconEnable));
+                                    break;
                                 }
 
-                                byte[] mergeAll = ByteUtil.byteMergeAll(onlinePlayerData);
-
-                                sendQueue.add(new Packet(
-                                        new VarInt(onlinePlayerPacketId.getBytesLength() + onlinePlayers.getBytesLength() + mergeAll.length),
-                                        onlinePlayerPacketId,
-                                        ByteUtil.byteMergeAll(onlinePlayers.getBytes(), mergeAll)
+                                sendQueue.add(ConnectionPacketSendUtil.getRconCommandResultPacket(
+                                        rconEnable,
+                                        command.getContent()
                                 ));
+                                break;
+                            case 0x23:
+//                                公告
+                                int announcementIndex = 0;
+                                VarLong announcementSenderId = new VarLong(packet.getData());
+                                announcementIndex += announcementSenderId.getBytesLength();
+                                VarIntString announcementSenderNickname = new VarIntString(Arrays.copyOfRange(packet.getData(), announcementIndex, packet.getData().length));
+                                announcementIndex += announcementSenderNickname.getBytesLength();
+                                VarIntString announcement = new VarIntString(Arrays.copyOfRange(packet.getData(), announcementIndex, packet.getData().length));
+
+                                String announcementToBeSent = ReplacePlaceholderUtil.replacePlaceholderWithString(
+                                        ConfigOperation.getAnnouncementFormat(),
+                                        FormatPlaceholder.SERVER_NAME,
+                                        serverName,
+                                        FormatPlaceholder.SENDER_ID,
+                                        String.valueOf(announcementSenderId.getValue()),
+                                        FormatPlaceholder.SENDER_NICKNAME,
+                                        String.valueOf(announcementSenderNickname.getContent()),
+                                        FormatPlaceholder.ANNOUNCEMENT,
+                                        announcement.getContent()
+                                );
+
+                                MinecraftMessageUtil.sendMinecraftMessage(announcementToBeSent);
                                 break;
                             case 0xF0:
 //                                关闭包

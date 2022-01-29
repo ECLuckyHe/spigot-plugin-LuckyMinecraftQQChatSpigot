@@ -94,4 +94,28 @@ public class ConfigOperation {
     public static String getOnlinePlayersResponseSeparator() {
         return config.getString("onlinePlayers.response.separator");
     }
+
+    public static String getRconCommandPrefix() {
+        return config.getString("rconCommand.prefix");
+    }
+
+    public static boolean getRconCommandEnabled() {
+        return  config.getBoolean("rconCommand.enabled");
+    }
+
+    public static int getRconCommandPort() {
+        return config.getInt("rconCommand.port");
+    }
+
+    public static String getRconCommandResultFormat() {
+        return config.getString("rconCommand.resultFormat");
+    }
+
+    public static String getRconCommandPassword() {
+        return config.getString("rconCommand.password");
+    }
+
+    public static String getAnnouncementFormat() {
+        return config.getString("announcementFormat");
+    }
 }
