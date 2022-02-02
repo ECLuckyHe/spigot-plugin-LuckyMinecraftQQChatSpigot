@@ -6,13 +6,11 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.DataO
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.listener.PlayerListener;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.thread.ClientMainThread;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.FormatPlaceholder;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftFontStyleCode;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.ReplacePlaceholderUtil;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
 

@@ -9,7 +9,9 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.FileNotFoundException;
 import java.util.Arrays;
+import java.util.List;
 
 public class McChat implements CommandExecutor {
     private JavaPlugin plugin;
@@ -25,6 +27,8 @@ public class McChat implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] strings) {
 
+        String commandName = command.getName();
+
         if (!commandSender.isOp()) {
             commandSender.sendMessage(addPrefix(MinecraftFontStyleCode.RED + "没有使用此命令的权限"));
             return true;
@@ -33,9 +37,10 @@ public class McChat implements CommandExecutor {
         int len = strings.length;
         if (len == 0) {
             commandSender.sendMessage(addPrefix("帮助菜单："));
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/mcchat addop <管理员QQ>    添加一个管理员QQ（可以在群内发送MC端指令）");
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/mcchat delop <管理员QQ>    删除一个管理员QQ");
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/mcchat reload    重载配置文件");
+            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " addop <管理员QQ>    添加一个管理员QQ（可以在群内发送MC端指令）");
+            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " delop <管理员QQ>    删除一个管理员QQ");
+            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " listop    列出所有添加op的QQ");
+            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " reload    重载配置文件");
             return true;
         }
 
@@ -49,26 +54,34 @@ public class McChat implements CommandExecutor {
             case "addop":
                 onAddOp(
                         commandSender,
-                        Arrays.copyOfRange(strings, 1, len)
+                        Arrays.copyOfRange(strings, 1, len),
+                        commandName
                 );
                 break;
             case "delop":
                 onDelOp(
                         commandSender,
-                        Arrays.copyOfRange(strings, 1, len)
+                        Arrays.copyOfRange(strings, 1, len),
+                        commandName
+                );
+                break;
+            case "listop":
+                onListOp(
+                        commandSender,
+                        commandName
                 );
                 break;
             default:
-                commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/mcchat 查看帮助");
+                commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " 查看帮助");
                 break;
         }
         return true;
     }
 
-    private void onAddOp(CommandSender commandSender, String[] args) {
+    private void onAddOp(CommandSender commandSender, String[] args, String commandName) {
         int len = args.length;
         if (len == 0) {
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/mcchat addop <管理员QQ>    添加一个管理员QQ（可以在群内发送MC端指令）");
+            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " addop <管理员QQ>    添加一个管理员QQ（可以在群内发送MC端指令）");
             return;
         }
 
@@ -77,7 +90,7 @@ public class McChat implements CommandExecutor {
         try {
             opId = Long.parseLong(opIdString);
         } catch (NumberFormatException e) {
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/mcchat addop <管理员QQ>    添加一个管理员QQ（可以在群内发送MC端指令）");
+            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " addop <管理员QQ>    添加一个管理员QQ（可以在群内发送MC端指令）");
             return;
         }
 
@@ -95,10 +108,10 @@ public class McChat implements CommandExecutor {
         commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "已添加管理员QQ " + opId);
     }
 
-    private void onDelOp(CommandSender commandSender, String[] args) {
+    private void onDelOp(CommandSender commandSender, String[] args, String commandName) {
         int len = args.length;
         if (len == 0) {
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/mcchat delop <管理员QQ>    删除一个管理员QQ");
+            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " delop <管理员QQ>    删除一个管理员QQ");
             return;
         }
 
@@ -107,7 +120,7 @@ public class McChat implements CommandExecutor {
         try {
             opId = Long.parseLong(opIdString);
         } catch (NumberFormatException e) {
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/mcchat delop <管理员QQ>    删除一个管理员QQ");
+            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " delop <管理员QQ>    删除一个管理员QQ");
             return;
         }
 
@@ -117,12 +130,33 @@ public class McChat implements CommandExecutor {
             commandSender.sendMessage(MinecraftFontStyleCode.RED + "管理员QQ " + opId + " 不存在");
             return;
         } catch (Exception e) {
-            e.printStackTrace();;
+            e.printStackTrace();
             commandSender.sendMessage(MinecraftFontStyleCode.RED + "执行指令时出现异常");
             return;
         }
 
         commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "已删除管理员QQ " + opId);
+    }
+
+    private static void onListOp(CommandSender commandSender, String commandName) {
+        List<Object> rconCommandOpIds;
+        try {
+            rconCommandOpIds = DataOperation.getRconCommandOpIds();
+        } catch (Exception e) {
+            e.printStackTrace();
+            commandSender.sendMessage(MinecraftFontStyleCode.RED + "指令指令时出现异常");
+            return;
+        }
+
+        StringBuilder res = new StringBuilder();
+        for (int i = 0; i < rconCommandOpIds.size(); i++) {
+            res.append(rconCommandOpIds.get(i));
+            if (i != rconCommandOpIds.size() - 1) {
+                res.append(", ");
+            }
+        }
+
+        commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "已添加op的QQ：" + res);
     }
 }
 

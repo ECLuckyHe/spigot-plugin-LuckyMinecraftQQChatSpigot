@@ -94,6 +94,7 @@ bot:
 
 # 服务器名字
 # 在下方的消息格式定义中可以使用占位符%serverName%来获得服务器名字
+# 注意：多个同名服务器接入同一个会话有可能产生不可预测的问题（并非严重问题）
 serverName: "MinecraftServer"
 
 
@@ -129,7 +130,7 @@ format:
   # 该消息为当玩家发送消息时发送
   # %playerName%    发送消息的玩家ID
   # %message%    消息内容
-  message: "[%serverName%] %playerName% 说 %message%"
+  message: "[%serverName%] <%playerName%> %message%"
   #
   # 该消息为当玩家死亡时发送
   # %playerName%    死亡的玩家ID
@@ -149,6 +150,10 @@ onlinePlayers:
   command:
     - "/list"
     - "/在线"
+    - "list"
+    - "在线"
+    - "#list"
+    - "#在线"
 
   # 获取在线玩家列表返回内容
   response:
