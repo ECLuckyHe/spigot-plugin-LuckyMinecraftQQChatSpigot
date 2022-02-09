@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
 
 public class ClientMainThread extends Thread {
@@ -25,6 +26,8 @@ public class ClientMainThread extends Thread {
 
     private MinecraftConnectionThread minecraftThread;
     private boolean isRunning = true;
+
+    private CountDownLatch cdl;
 
     public ClientMainThread(Server server, Logger logger) {
         this.server = server;
@@ -53,6 +56,7 @@ public class ClientMainThread extends Thread {
         int retryTimes = ConfigOperation.getBotRetryTimes();
 
         while (isRunning) {
+            cdl = new CountDownLatch(1);
             try {
                 socket = new Socket(host, port);
                 InputStream inputStream = socket.getInputStream();
@@ -123,13 +127,15 @@ public class ClientMainThread extends Thread {
                 }
 
 
-                minecraftThread = new MinecraftConnectionThread(server, socket, logger, sessionName.getContent(), heartbeatInterval.getValue(), address.getContent());
+                minecraftThread = new MinecraftConnectionThread(server, socket, logger, sessionName.getContent(), heartbeatInterval.getValue(), address.getContent(), cdl);
                 minecraftThread.start();
 
-//                循环直到线程结束
-                while (minecraftThread.isAlive()) {
+////                循环直到线程结束
+//                while (minecraftThread.isAlive()) {
+//
+//                }
 
-                }
+                cdl.await();
 
                 if (isRunning) {
                     logger.warning("连接已断开，" + retryTimes + "秒后再次尝试");

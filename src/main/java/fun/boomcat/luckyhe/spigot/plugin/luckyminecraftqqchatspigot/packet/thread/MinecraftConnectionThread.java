@@ -6,21 +6,16 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datat
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarIntString;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarLong;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ByteUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketReceiveUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketSendUtil;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.RconUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.*;
 import org.bukkit.Server;
-import org.bukkit.entity.Player;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 public class MinecraftConnectionThread extends Thread {
@@ -33,8 +28,8 @@ public class MinecraftConnectionThread extends Thread {
 
     private final boolean rconEnable = ConfigOperation.getRconCommandEnabled();
 
-    private final Queue<Packet> sendQueue = new ConcurrentLinkedQueue<>();
-    private final Queue<Packet> receiveQueue = new ConcurrentLinkedQueue<>();
+    private final LinkedBlockingQueue<Packet> sendQueue = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<Packet> receiveQueue = new LinkedBlockingQueue<>();
 
     private final Server server;
     private final Socket socket;
@@ -47,7 +42,11 @@ public class MinecraftConnectionThread extends Thread {
 
     private boolean isConnected = true;
     private boolean isStop = false;
-    private final CountDownLatch cdl = new CountDownLatch(4);
+    private final CountDownLatch allThreadCdl = new CountDownLatch(4);
+
+    //    当 不取队列的线程 运行完成时减一
+    private final CountDownLatch noTakeQueueThreadCdl = new CountDownLatch(2);
+    private final CountDownLatch mainThreadCdl;
 
     private void logInfo(String threadName, String info) {
         logger.info("[" + threadName + "] " + info);
@@ -96,17 +95,21 @@ public class MinecraftConnectionThread extends Thread {
 
             while (isConnected) {
                 try {
-                    Packet packet = sendQueue.poll();
-                    if (packet != null) {
-                        outputStream.write(packet.getBytes());
-                        outputStream.flush();
+                    Packet packet = sendQueue.take();
+                    outputStream.write(packet.getBytes());
+                    outputStream.flush();
 
-                        if (packet.getId().getValue() == 0xF0) {
-                            logInfo(threadName, "发送关闭包，内容" + new VarIntString(packet.getData()).getContent());
-                            isConnected = false;
-                            socket.close();
-                        }
+//                        如果包id为-1，不发出且进行下一轮循环
+                    if (packet.getId().getValue() == -1) {
+                        continue;
                     }
+
+                    if (packet.getId().getValue() == 0xF0) {
+                        logInfo(threadName, "发送关闭包，内容" + new VarIntString(packet.getData()).getContent());
+                        isConnected = false;
+                        socket.close();
+                    }
+
                 } catch (Exception e) {
                     isConnected = false;
                     e.printStackTrace();
@@ -122,7 +125,7 @@ public class MinecraftConnectionThread extends Thread {
                 }
             }
 
-            cdl.countDown();
+            allThreadCdl.countDown();
             logInfo(threadName, "结束工作");
         });
 
@@ -131,10 +134,8 @@ public class MinecraftConnectionThread extends Thread {
 
             while (isConnected) {
                 try {
-                    if (inputStream.available() > 0) {
-                        Packet packet = ConnectionPacketReceiveUtil.getPacket(inputStream);
-                        receiveQueue.add(packet);
-                    }
+                    Packet packet = ConnectionPacketReceiveUtil.getPacket(inputStream);
+                    receiveQueue.add(packet);
                 } catch (Exception e) {
                     isConnected = false;
                     e.printStackTrace();
@@ -150,7 +151,8 @@ public class MinecraftConnectionThread extends Thread {
                 }
             }
 
-            cdl.countDown();
+            allThreadCdl.countDown();
+            noTakeQueueThreadCdl.countDown();
             logInfo(threadName, "结束工作");
         });
 
@@ -160,95 +162,96 @@ public class MinecraftConnectionThread extends Thread {
 
             while (isConnected) {
                 try {
-                    Packet packet = receiveQueue.poll();
-                    if (packet != null) {
-                        switch (packet.getId().getValue()) {
-                            case 0x20:
+                    Packet packet = receiveQueue.take();
+                    switch (packet.getId().getValue()) {
+                        case -1:
+                            continue;
+                        case 0x20:
 //                                回应心跳包
-                                VarLong ping = new VarLong(packet.getData());
-                                sendQueue.add(ConnectionPacketSendUtil.getPongPacket(ping.getValue()));
-                                heartbeatCount = 0;
-                                break;
-                            case 0x21:
+                            VarLong ping = new VarLong(packet.getData());
+                            sendQueue.add(ConnectionPacketSendUtil.getPongPacket(ping.getValue()));
+                            heartbeatCount = 0;
+                            break;
+                        case 0x21:
 //                                收到要求提供玩家在线信息数据的数据包
-                                sendQueue.add(ConnectionPacketSendUtil.getOnlinePlayersPacket());
-                                break;
-                            case 0x22:
+                            sendQueue.add(ConnectionPacketSendUtil.getOnlinePlayersPacket());
+                            break;
+                        case 0x22:
 //                                指令
-                                int commandIndex = 0;
-                                VarLong commandSenderId = new VarLong(packet.getData());
-                                commandIndex += commandSenderId.getBytesLength();
-                                VarIntString command = new VarIntString(Arrays.copyOfRange(packet.getData(), commandIndex, packet.getData().length));
+                            int commandIndex = 0;
+                            VarLong commandSenderId = new VarLong(packet.getData());
+                            commandIndex += commandSenderId.getBytesLength();
+                            VarIntString command = new VarIntString(Arrays.copyOfRange(packet.getData(), commandIndex, packet.getData().length));
 
 
-                                if (!DataOperation.isRconCommandOpIdExist(commandSenderId.getValue())) {
-                                    sendQueue.add(ConnectionPacketSendUtil.getRconCommandRefusedPacket(rconEnable));
-                                    break;
-                                }
-
-                                sendQueue.add(ConnectionPacketSendUtil.getRconCommandResultPacket(
-                                        rconEnable,
-                                        command.getContent()
-                                ));
+                            if (!DataOperation.isRconCommandOpIdExist(commandSenderId.getValue())) {
+                                sendQueue.add(ConnectionPacketSendUtil.getRconCommandRefusedPacket(rconEnable));
                                 break;
-                            case 0x23:
+                            }
+
+                            sendQueue.add(ConnectionPacketSendUtil.getRconCommandResultPacket(
+                                    rconEnable,
+                                    command.getContent()
+                            ));
+                            break;
+                        case 0x23:
 //                                公告
-                                int announcementIndex = 0;
-                                VarLong announcementSenderId = new VarLong(packet.getData());
-                                announcementIndex += announcementSenderId.getBytesLength();
-                                VarIntString announcementSenderNickname = new VarIntString(Arrays.copyOfRange(packet.getData(), announcementIndex, packet.getData().length));
-                                announcementIndex += announcementSenderNickname.getBytesLength();
-                                VarIntString announcement = new VarIntString(Arrays.copyOfRange(packet.getData(), announcementIndex, packet.getData().length));
+                            int announcementIndex = 0;
+                            VarLong announcementSenderId = new VarLong(packet.getData());
+                            announcementIndex += announcementSenderId.getBytesLength();
+                            VarIntString announcementSenderNickname = new VarIntString(Arrays.copyOfRange(packet.getData(), announcementIndex, packet.getData().length));
+                            announcementIndex += announcementSenderNickname.getBytesLength();
+                            VarIntString announcement = new VarIntString(Arrays.copyOfRange(packet.getData(), announcementIndex, packet.getData().length));
 
-                                String announcementToBeSent = ReplacePlaceholderUtil.replacePlaceholderWithString(
-                                        ConfigOperation.getAnnouncementFormat(),
-                                        FormatPlaceholder.SERVER_NAME,
-                                        serverName,
-                                        FormatPlaceholder.SENDER_ID,
-                                        String.valueOf(announcementSenderId.getValue()),
-                                        FormatPlaceholder.SENDER_NICKNAME,
-                                        String.valueOf(announcementSenderNickname.getContent()),
-                                        FormatPlaceholder.ANNOUNCEMENT,
-                                        announcement.getContent()
-                                );
+                            String announcementToBeSent = ReplacePlaceholderUtil.replacePlaceholderWithString(
+                                    ConfigOperation.getAnnouncementFormat(),
+                                    FormatPlaceholder.SERVER_NAME,
+                                    serverName,
+                                    FormatPlaceholder.SENDER_ID,
+                                    String.valueOf(announcementSenderId.getValue()),
+                                    FormatPlaceholder.SENDER_NICKNAME,
+                                    String.valueOf(announcementSenderNickname.getContent()),
+                                    FormatPlaceholder.ANNOUNCEMENT,
+                                    announcement.getContent()
+                            );
 
-                                MinecraftMessageUtil.sendMinecraftMessage(announcementToBeSent);
-                                break;
-                            case 0xF0:
+                            MinecraftMessageUtil.sendMinecraftMessage(announcementToBeSent);
+                            break;
+                        case 0xF0:
 //                                关闭包
-                                VarIntString exitMsg = new VarIntString(packet.getData());
-                                logInfo(threadName, "对方要求断开连接，原因：" + exitMsg.getContent());
+                            VarIntString exitMsg = new VarIntString(packet.getData());
+                            logInfo(threadName, "对方要求断开连接，原因：" + exitMsg.getContent());
 
-                                MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
-                                        ConfigOperation.getInfoOnBotRequestClose(),
-                                        FormatPlaceholder.SERVER_NAME,
-                                        ConfigOperation.getServerName(),
-                                        FormatPlaceholder.SESSION_ID,
-                                        String.valueOf(sessionId),
-                                        FormatPlaceholder.SERVER_NAME,
-                                        sessionName,
-                                        FormatPlaceholder.PING_INTERVAL,
-                                        String.valueOf(heartbeatInterval),
-                                        FormatPlaceholder.REMOTE_ADDRESS,
-                                        remoteAddress,
-                                        FormatPlaceholder.REASON,
-                                        exitMsg.getContent()
-                                ));
+                            MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
+                                    ConfigOperation.getInfoOnBotRequestClose(),
+                                    FormatPlaceholder.SERVER_NAME,
+                                    ConfigOperation.getServerName(),
+                                    FormatPlaceholder.SESSION_ID,
+                                    String.valueOf(sessionId),
+                                    FormatPlaceholder.SERVER_NAME,
+                                    sessionName,
+                                    FormatPlaceholder.PING_INTERVAL,
+                                    String.valueOf(heartbeatInterval),
+                                    FormatPlaceholder.REMOTE_ADDRESS,
+                                    remoteAddress,
+                                    FormatPlaceholder.REASON,
+                                    exitMsg.getContent()
+                            ));
 
-                                isConnected = false;
-                                socket.close();
-                                break;
-                            case 0x11:
+                            isConnected = false;
+                            socket.close();
+                            break;
+                        case 0x11:
 //                                原封不动发送到服内的消息包
-                                VarIntString msg = new VarIntString(packet.getData());
-                                MinecraftMessageUtil.sendMinecraftMessage(msg.getContent());
-                                break;
-                            case 0x10:
+                            VarIntString msg = new VarIntString(packet.getData());
+                            MinecraftMessageUtil.sendMinecraftMessage(msg.getContent());
+                            break;
+                        case 0x10:
 //                                来自群内的消息
-                                ConnectionPacketReceiveUtil.handleMessageFromBot(formatFromBot, packet, sessionName);
-                                break;
-                        }
+                            ConnectionPacketReceiveUtil.handleMessageFromBot(formatFromBot, packet, sessionName);
+                            break;
                     }
+
                 } catch (Exception e) {
                     e.printStackTrace();
                     isConnected = false;
@@ -264,7 +267,7 @@ public class MinecraftConnectionThread extends Thread {
                 }
             }
 
-            cdl.countDown();
+            allThreadCdl.countDown();
             logInfo(threadName, "结束工作");
         });
 
@@ -314,13 +317,26 @@ public class MinecraftConnectionThread extends Thread {
                 }
             }
 
-            cdl.countDown();
+            allThreadCdl.countDown();
+            noTakeQueueThreadCdl.countDown();
             logInfo(threadName, "结束工作");
         });
 
+//        等待非取队列线程结束
+        try {
+            noTakeQueueThreadCdl.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+//        包id为-1的包不作任何处理
+//        此处只是为了让队列不继续阻塞
+        sendQueue.add(new Packet(new VarInt(0), new VarInt(-1), null));
+        receiveQueue.add(new Packet(new VarInt(0), new VarInt(-1), null));
+
 //        等待所有线程结束
         try {
-            cdl.await();
+            allThreadCdl.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -337,15 +353,17 @@ public class MinecraftConnectionThread extends Thread {
 
         logInfo("Socket", "已确认关闭");
         isStop = true;
+        mainThreadCdl.countDown();
     }
 
-    public MinecraftConnectionThread(Server server, Socket socket, Logger logger, String sessionName, int heartbeatInterval, String remoteAddress) throws IOException {
+    public MinecraftConnectionThread(Server server, Socket socket, Logger logger, String sessionName, int heartbeatInterval, String remoteAddress, CountDownLatch mainThreadCdl) throws IOException {
         this.server = server;
         this.socket = socket;
         this.logger = logger;
         this.sessionName = sessionName;
         this.heartbeatInterval = heartbeatInterval;
         this.remoteAddress = remoteAddress;
+        this.mainThreadCdl = mainThreadCdl;
 
         this.inputStream = new BufferedInputStream(socket.getInputStream());
         this.outputStream = new BufferedOutputStream(socket.getOutputStream());
