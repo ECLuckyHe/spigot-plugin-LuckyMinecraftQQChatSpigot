@@ -78,7 +78,7 @@ public class ClientMainThread extends Thread {
                 ).getBytes());
 
 //                睡眠一秒，确保对方已收到
-                Thread.sleep(1000);
+                Thread.sleep(1000L);
                 Packet packet = ConnectionPacketReceiveUtil.getPacket(inputStream);
 
                 VarIntString sessionName = null;
@@ -152,14 +152,21 @@ public class ClientMainThread extends Thread {
                             FormatPlaceholder.REMOTE_ADDRESS,
                             minecraftThread.getRemoteAddress()
                     ));
-                    Thread.sleep(1000L * retryTimes);
+
+                    for (int i = 0; i < retryTimes && isRunning; i++) {
+//                        防止等待过长
+                        Thread.sleep(1000L);
+                    }
                 }
 
             } catch (Exception e) {
 //                e.printStackTrace();
                 logger.warning("Socket连接失败，" + retryTimes + "秒后再次尝试");
                 try {
-                    Thread.sleep(1000L * retryTimes);
+                    for (int i = 0; i < retryTimes && isRunning; i++) {
+//                        防止等待过长
+                        Thread.sleep(1000L);
+                    }
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
