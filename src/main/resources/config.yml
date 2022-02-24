@@ -191,10 +191,6 @@ rconCommand:
   # 当op在群内发送的消息中包含以下前缀时，前缀后面的内容为指令内容
   prefix: "[%serverName%]#"
 
-  # 用户绑定mcid前缀
-  # 当用户在群内发送的消息中包含以下前缀时，前缀后面的内容为游戏内id
-  userBindPrefix: "[%serverName%]^"
-
   # 用户指令格式前缀
   # 当用户在群内发送的消息中包含以下前缀时，前缀后面的内容为指令内容
   userPrefix: "[%serverName%]/"
