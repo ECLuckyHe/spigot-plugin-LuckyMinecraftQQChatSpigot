@@ -242,8 +242,8 @@ public class ConnectionPacketSendUtil {
             String m = commandMap.get("mapping");
             VarIntString res = new VarIntString("用户指令" + name + "已存在：\n" +
                     "指令名：" + n + "\n" +
-                    "用户指令：" + n + "\n" +
-                    "实际指令：" + n);
+                    "用户指令：" + c + "\n" +
+                    "实际指令：" + m);
             return new Packet(
                     new VarInt(packetId.getBytesLength() + res.getBytesLength()),
                     packetId,
@@ -282,8 +282,8 @@ public class ConnectionPacketSendUtil {
         String m = commandMap.get("mapping");
         VarIntString res = new VarIntString("用户指令" + name + "已添加：\n" +
                 "指令名：" + n + "\n" +
-                "用户指令：" + n + "\n" +
-                "实际指令：" + n);
+                "用户指令：" + c + "\n" +
+                "实际指令：" + m);
         return new Packet(
                 new VarInt(packetId.getBytesLength() + res.getBytesLength()),
                 packetId,
@@ -358,8 +358,8 @@ public class ConnectionPacketSendUtil {
         String m = commandMap.get("mapping");
         VarIntString res = new VarIntString("用户指令" + name + "已删除：\n" +
                 "指令名：" + n + "\n" +
-                "用户指令：" + n + "\n" +
-                "实际指令：" + n);
+                "用户指令：" + c + "\n" +
+                "实际指令：" + m);
         return new Packet(
                 new VarInt(packetId.getBytesLength() + res.getBytesLength()),
                 packetId,
