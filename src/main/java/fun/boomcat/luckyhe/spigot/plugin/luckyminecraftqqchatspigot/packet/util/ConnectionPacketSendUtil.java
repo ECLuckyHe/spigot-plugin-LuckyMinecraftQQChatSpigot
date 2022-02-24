@@ -1,5 +1,8 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util;
 
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.DataOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandExistException;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandNotExistException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarInt;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarIntString;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarLong;
@@ -9,10 +12,12 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
 import org.bukkit.entity.Player;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public class ConnectionPacketSendUtil {
     public static Packet getConnectPacket(
@@ -213,5 +218,152 @@ public class ConnectionPacketSendUtil {
         );
     }
 
+    public static Packet getAddUserCommandResultPacket(String name, String userCommand, String mapCommand) {
+//        添加用户指令返回结果
+        VarInt packetId = new VarInt(0x25);
 
+//        获取一遍
+        Map<String, String> commandMap;
+        try {
+            commandMap = DataOperation.getRconCommandUserCommandByName(name);
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        若找到了，则说明已存在，不进行添加并发送已存在的指令信息
+        if (commandMap != null) {
+            String n = commandMap.get("name");
+            String c = commandMap.get("command");
+            String m = commandMap.get("mapping");
+            VarIntString res = new VarIntString("用户指令" + name + "已存在：\n" +
+                    "指令名：" + n + "\n" +
+                    "用户指令：" + n + "\n" +
+                    "实际指令：" + n);
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        正式添加
+        try {
+            DataOperation.addRconCommandUserCommand(name, userCommand, mapCommand);
+        } catch (UserCommandExistException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        再获取一次
+        try {
+            commandMap = DataOperation.getRconCommandUserCommandByName(name);
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+        String n = commandMap.get("name");
+        String c = commandMap.get("command");
+        String m = commandMap.get("mapping");
+        VarIntString res = new VarIntString("用户指令" + name + "已添加：\n" +
+                "指令名：" + n + "\n" +
+                "用户指令：" + n + "\n" +
+                "实际指令：" + n);
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                packetId,
+                res.getBytes()
+        );
+    }
+
+    public static Packet getDelUserCommandResultPacket(String name) {
+//        删除用户指令返回
+        VarInt packetId = new VarInt(0x26);
+
+//        获取一次
+        Map<String, String> commandMap = null;
+        try {
+            commandMap = DataOperation.getRconCommandUserCommandByName(name);
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        判断，若不存在则不删除
+        if (commandMap == null) {
+            VarIntString res = new VarIntString("不存在用户指令" + name);
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        删除操作
+        try {
+            DataOperation.delRconCommandUserCommand(name);
+        } catch (UserCommandNotExistException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+        boolean isExist = true;
+        try {
+            isExist = DataOperation.isRconCommandUserCommandNameExist(name);
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+        if (isExist) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+        String n = commandMap.get("name");
+        String c = commandMap.get("command");
+        String m = commandMap.get("mapping");
+        VarIntString res = new VarIntString("用户指令" + name + "已删除：\n" +
+                "指令名：" + n + "\n" +
+                "用户指令：" + n + "\n" +
+                "实际指令：" + n);
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                packetId,
+                res.getBytes()
+        );
+    }
 }

@@ -9,7 +9,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.FileNotFoundException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -125,7 +124,7 @@ public class McChat implements CommandExecutor {
         }
 
         try {
-            DataOperation.removeRconCommnadIds(opId);
+            DataOperation.removeRconCommandIds(opId);
         } catch (OpIdNotExistException e) {
             commandSender.sendMessage(MinecraftFontStyleCode.RED + "管理员QQ " + opId + " 不存在");
             return;

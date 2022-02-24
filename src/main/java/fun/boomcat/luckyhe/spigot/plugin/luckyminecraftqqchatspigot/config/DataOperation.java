@@ -2,10 +2,13 @@ package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config;
 
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.OpIdExistException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.OpIdNotExistException;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandExistException;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandNotExistException;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -95,7 +98,7 @@ public class DataOperation {
         writeFile();
     }
 
-    public static void removeRconCommnadIds(long id) throws IOException, OpIdNotExistException {
+    public static void removeRconCommandIds(long id) throws IOException, OpIdNotExistException {
         if (!isRconCommandOpIdExist(id)) {
             throw new OpIdNotExistException();
         }
@@ -114,6 +117,54 @@ public class DataOperation {
                 break;
             }
         }
+        writeFile();
+    }
+
+    public static List<Map<String, String>> getRconCommandUserCommands() throws FileNotFoundException {
+        return ((List<Map<String, String>>) ((Map<String, Object>) getDataMap().get("rconCommand")).get("userCommands"));
+    }
+
+    public static boolean isRconCommandUserCommandNameExist(String name) throws FileNotFoundException {
+        return getRconCommandUserCommandByName(name) != null;
+    }
+
+    public static Map<String, String> getRconCommandUserCommandByName(String name) throws FileNotFoundException {
+        List<Map<String, String>> rconCommandUserCommands = getRconCommandUserCommands();
+        for (Map<String, String> map : rconCommandUserCommands) {
+            if (map.get("name").equals(name)) {
+                return map;
+            }
+        }
+
+        return null;
+    }
+
+
+
+    public static void addRconCommandUserCommand(String name, String command, String mapCommand) throws UserCommandExistException, IOException {
+//        添加用户指令
+        if (isRconCommandUserCommandNameExist(name)) {
+            throw new UserCommandExistException();
+        }
+
+        List<Map<String, String>> rconCommandUserCommands = getRconCommandUserCommands();
+
+        Map<String, String> newMap = new HashMap<>();
+        newMap.put("name", name);
+        newMap.put("command", command);
+        newMap.put("mapping", mapCommand);
+        rconCommandUserCommands.add(newMap);
+
+        writeFile();
+    }
+
+    public static void delRconCommandUserCommand(String name) throws IOException, UserCommandNotExistException {
+        if (!isRconCommandUserCommandNameExist(name)) {
+            throw new UserCommandNotExistException();
+        }
+
+        List<Map<String, String>> rconCommandUserCommands = getRconCommandUserCommands();
+        rconCommandUserCommands.removeIf(o -> o.get("name").equals(name));
         writeFile();
     }
 }

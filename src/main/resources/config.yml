@@ -187,9 +187,13 @@ rconCommand:
   # rcon密码
   password: "abcdefg"
 
-  # 指令格式前缀
+  # op指令格式前缀
   # 当op在群内发送的消息中包含以下前缀时，前缀后面的内容为指令内容
-  prefix: "[%serverName%]/"
+  prefix: "[%serverName%]#"
+
+  # 用户指令格式前缀
+  # 当用户在群内发送的消息种包含以下前缀时，前缀后面的内容为指令内容
+  userPrefix: "[%serverName%]/"
 
   # 指令执行结果格式
   # 该内容将被发送到群里

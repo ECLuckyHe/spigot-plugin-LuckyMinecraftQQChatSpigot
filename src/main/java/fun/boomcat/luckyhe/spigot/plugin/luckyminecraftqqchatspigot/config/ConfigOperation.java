@@ -99,6 +99,10 @@ public class ConfigOperation {
         return config.getString("rconCommand.prefix");
     }
 
+    public static String getRconCommandUserPrefix() {
+        return config.getString("rconCommand.userPrefix");
+    }
+
     public static boolean getRconCommandEnabled() {
         return  config.getBoolean("rconCommand.enabled");
     }
