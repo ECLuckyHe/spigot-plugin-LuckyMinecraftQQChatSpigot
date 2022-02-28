@@ -253,6 +253,7 @@ public class MinecraftConnectionThread extends Thread {
                         }
 
                         case 0x26: {
+//                            删除用户指令
                             int i = 0;
                             byte[] data = packet.getData();
                             VarLong senderId = new VarLong(Arrays.copyOfRange(data, i, data.length));
@@ -267,6 +268,7 @@ public class MinecraftConnectionThread extends Thread {
                         }
 
                         case 0x27: {
+//                            获取用户指令列表（mcchat指令）
                             sendQueue.add(ConnectionPacketSendUtil.getMcChatUserCommandResultPacket());
                             break;
                         }
