@@ -10,6 +10,7 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.excep
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.exception.VarIntTooBigException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.UserCommandUtil;
 import org.bukkit.entity.Player;
 
 import java.io.FileNotFoundException;
@@ -218,9 +219,27 @@ public class ConnectionPacketSendUtil {
         );
     }
 
-    public static Packet getAddUserCommandResultPacket(String name, String userCommand, String mapCommand) {
+    public static Packet getAddUserCommandResultPacket(long id, String name, String userCommand, String mapCommand) {
 //        添加用户指令返回结果
         VarInt packetId = new VarInt(0x25);
+
+//        op验证
+        boolean rconCommandOpIdExist = false;
+        try {
+            rconCommandOpIdExist = DataOperation.isRconCommandOpIdExist(id);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        if (!rconCommandOpIdExist) {
+            VarIntString res = new VarIntString("用户 " + id + " 不是MC端远程op，请在MC端执行以下指令获得op权限：\n" +
+                    "/mcchat addop " + id);
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
 
 //        获取一遍
         Map<String, String> commandMap;
@@ -240,10 +259,34 @@ public class ConnectionPacketSendUtil {
             String n = commandMap.get("name");
             String c = commandMap.get("command");
             String m = commandMap.get("mapping");
-            VarIntString res = new VarIntString("用户指令" + name + "已存在：\n" +
+            VarIntString res = new VarIntString("用户指令 " + name + " 已存在：\n" +
                     "指令名：" + n + "\n" +
                     "用户指令：" + c + "\n" +
                     "实际指令：" + m);
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        审核是否按照格式要求
+        userCommand = UserCommandUtil.craftCommand(UserCommandUtil.splitCommand(userCommand));
+        mapCommand = UserCommandUtil.craftCommand(UserCommandUtil.splitCommand(mapCommand));
+        List<String> userCommandStrings = UserCommandUtil.getCommandArgList(userCommand);
+        List<String> mapCommandStrings = UserCommandUtil.getCommandArgList(mapCommand);
+
+        for (String mapCommandString : mapCommandStrings) {
+            userCommandStrings.removeIf(o -> o.equals(mapCommandString));
+        }
+
+//        有未使用的参数
+        if (userCommandStrings.size() != 0) {
+            StringBuilder sb = new StringBuilder("创建用户指令失败，以下参数未使用：\n");
+            for (String s : userCommandStrings) {
+                sb.append(s).append("\n");
+            }
+            VarIntString res = new VarIntString(sb.toString());
             return new Packet(
                     new VarInt(packetId.getBytesLength() + res.getBytesLength()),
                     packetId,
@@ -280,7 +323,7 @@ public class ConnectionPacketSendUtil {
         String n = commandMap.get("name");
         String c = commandMap.get("command");
         String m = commandMap.get("mapping");
-        VarIntString res = new VarIntString("用户指令" + name + "已添加：\n" +
+        VarIntString res = new VarIntString("用户指令 " + name + " 已添加：\n" +
                 "指令名：" + n + "\n" +
                 "用户指令：" + c + "\n" +
                 "实际指令：" + m);
@@ -291,9 +334,27 @@ public class ConnectionPacketSendUtil {
         );
     }
 
-    public static Packet getDelUserCommandResultPacket(String name) {
+    public static Packet getDelUserCommandResultPacket(long id, String name) {
 //        删除用户指令返回
         VarInt packetId = new VarInt(0x26);
+
+        //        op验证
+        boolean rconCommandOpIdExist = false;
+        try {
+            rconCommandOpIdExist = DataOperation.isRconCommandOpIdExist(id);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        if (!rconCommandOpIdExist) {
+            VarIntString res = new VarIntString("用户 " + id + " 不是MC端远程op，请在MC端执行以下指令获得op权限：\n" +
+                    "/mcchat addop " + id);
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
 
 //        获取一次
         Map<String, String> commandMap = null;
@@ -364,6 +425,34 @@ public class ConnectionPacketSendUtil {
                 new VarInt(packetId.getBytesLength() + res.getBytesLength()),
                 packetId,
                 res.getBytes()
+        );
+    }
+
+    public static Packet getMcChatUserCommandResultPacket() throws FileNotFoundException {
+//        mcchat指令获取用户指令列表
+        VarInt packetId = new VarInt(0x27);
+        List<Map<String, String>> rconCommandUserCommands = DataOperation.getRconCommandUserCommands();
+        VarInt commandLength = new VarInt(rconCommandUserCommands.size());
+
+        int packetLength = packetId.getBytesLength() + commandLength.getBytesLength();
+        byte[] data = commandLength.getBytes();
+        for (Map<String, String> map : rconCommandUserCommands) {
+            VarIntString name = new VarIntString(map.get("name"));
+            VarIntString command = new VarIntString(map.get("command"));
+            VarIntString mapping = new VarIntString(map.get("mapping"));
+            packetLength += name.getBytesLength() + command.getBytesLength() + mapping.getBytesLength();
+            data = ByteUtil.byteMergeAll(
+                    data,
+                    name.getBytes(),
+                    command.getBytes(),
+                    mapping.getBytes()
+            );
+        }
+
+        return new Packet(
+                new VarInt(packetLength),
+                packetId,
+                data
         );
     }
 }

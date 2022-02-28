@@ -244,6 +244,7 @@ public class MinecraftConnectionThread extends Thread {
                             VarIntString mapCommand = new VarIntString(Arrays.copyOfRange(data, i, data.length));
 
                             sendQueue.add(ConnectionPacketSendUtil.getAddUserCommandResultPacket(
+                                    senderId.getValue(),
                                     name.getContent(),
                                     userCommand.getContent(),
                                     mapCommand.getContent()
@@ -258,7 +259,15 @@ public class MinecraftConnectionThread extends Thread {
                             i += senderId.getBytesLength();
                             VarIntString commandName = new VarIntString(Arrays.copyOfRange(data, i, data.length));
 
-                            sendQueue.add(ConnectionPacketSendUtil.getDelUserCommandResultPacket(commandName.getContent()));
+                            sendQueue.add(ConnectionPacketSendUtil.getDelUserCommandResultPacket(
+                                    senderId.getValue(),
+                                    commandName.getContent()
+                            ));
+                            break;
+                        }
+
+                        case 0x27: {
+                            sendQueue.add(ConnectionPacketSendUtil.getMcChatUserCommandResultPacket());
                             break;
                         }
 
