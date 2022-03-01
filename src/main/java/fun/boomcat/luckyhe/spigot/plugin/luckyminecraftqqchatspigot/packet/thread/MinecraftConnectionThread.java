@@ -273,6 +273,11 @@ public class MinecraftConnectionThread extends Thread {
                             break;
                         }
 
+                        case 0x28: {
+//                            绑定mcid和qq返回
+
+                        }
+
                         case 0xF0: {
 //                                关闭包
                             VarIntString exitMsg = new VarIntString(packet.getData());

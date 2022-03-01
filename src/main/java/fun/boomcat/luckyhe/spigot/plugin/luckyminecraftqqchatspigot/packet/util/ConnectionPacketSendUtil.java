@@ -33,7 +33,9 @@ public class ConnectionPacketSendUtil {
             String onlinePlayersCommandResponseFormat,
             String onlinePlayersCommandResponseSeparator,
             String rconCommandPrefix,
-            String rconCommandResultFormat
+            String rconCommandResultFormat,
+            String userCommandPrefix,
+            String userBindPrefix
     ) {
         VarInt packetId = new VarInt(0x00);
 
@@ -56,10 +58,13 @@ public class ConnectionPacketSendUtil {
         VarIntString rcp = new VarIntString(rconCommandPrefix);
         VarIntString rcrf = new VarIntString(rconCommandResultFormat);
 
+        VarIntString ucp = new VarIntString(userCommandPrefix);
+        VarIntString ubp = new VarIntString(userBindPrefix);
+
         int totalLengthInt = packetId.getBytesLength() + si.getBytesLength() + sn.getBytesLength() +
                 jfs.getBytesLength() + qfs.getBytesLength() + mfs.getBytesLength() + dfs.getBytesLength() +
                 kfs.getBytesLength() + opcc.getBytesLength() + opcrf.getBytesLength() + opcrs.getBytesLength() +
-                rcp.getBytesLength() + rcrf.getBytesLength();
+                rcp.getBytesLength() + rcrf.getBytesLength() + ucp.getBytesLength() + ubp.getBytesLength();
         for (VarIntString opcca : opccs) {
             totalLengthInt += opcca.getBytesLength();
         }
@@ -82,7 +87,9 @@ public class ConnectionPacketSendUtil {
                 opcrf.getBytes(),
                 opcrs.getBytes(),
                 rcp.getBytes(),
-                rcrf.getBytes()
+                rcrf.getBytes(),
+                ucp.getBytes(),
+                ubp.getBytes()
         );
 
         return new Packet(
@@ -454,5 +461,12 @@ public class ConnectionPacketSendUtil {
                 packetId,
                 data
         );
+    }
+
+    public static Packet getUserBindResultPacket(long senderId, String mcid) {
+//        绑定mcid和qq返回结果
+        VarInt packetId = new VarInt(0x28);
+//        todo
+        return null;
     }
 }

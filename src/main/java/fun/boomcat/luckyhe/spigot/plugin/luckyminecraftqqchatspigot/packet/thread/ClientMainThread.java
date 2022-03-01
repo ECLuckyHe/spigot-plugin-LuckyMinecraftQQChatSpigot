@@ -74,7 +74,9 @@ public class ClientMainThread extends Thread {
                         ConfigOperation.getOnlinePlayersResponseFormat(),
                         ConfigOperation.getOnlinePlayersResponseSeparator(),
                         ConfigOperation.getRconCommandPrefix(),
-                        ConfigOperation.getRconCommandResultFormat()
+                        ConfigOperation.getRconCommandResultFormat(),
+                        ConfigOperation.getRconCommandUserPrefix(),
+                        ConfigOperation.getRconCommandUserBindPrefix()
                 ).getBytes());
 
 //                睡眠一秒，确保对方已收到
@@ -129,11 +131,6 @@ public class ClientMainThread extends Thread {
 
                 minecraftThread = new MinecraftConnectionThread(server, socket, logger, sessionName.getContent(), heartbeatInterval.getValue(), address.getContent(), cdl);
                 minecraftThread.start();
-
-////                循环直到线程结束
-//                while (minecraftThread.isAlive()) {
-//
-//                }
 
                 cdl.await();
 
