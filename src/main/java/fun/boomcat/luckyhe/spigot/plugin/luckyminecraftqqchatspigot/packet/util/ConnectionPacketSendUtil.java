@@ -1,6 +1,8 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util;
 
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.DataOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.QqOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.SendBindMessageToPlayerFailException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandExistException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandNotExistException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarInt;
@@ -9,6 +11,8 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datat
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.exception.VarIntStringLengthNotMatchException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.exception.VarIntTooBigException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.BindQqUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftFontStyleCode;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.UserCommandUtil;
 import org.bukkit.entity.Player;
@@ -400,7 +404,7 @@ public class ConnectionPacketSendUtil {
             );
         }
 
-        boolean isExist = true;
+        boolean isExist;
         try {
             isExist = DataOperation.isRconCommandUserCommandNameExist(name);
         } catch (Exception e) {
@@ -466,7 +470,23 @@ public class ConnectionPacketSendUtil {
     public static Packet getUserBindResultPacket(long senderId, String mcid) {
 //        绑定mcid和qq返回结果
         VarInt packetId = new VarInt(0x28);
-//        todo
-        return null;
+
+        String mcMessage = MinecraftFontStyleCode.GOLD + "QQ号为" + MinecraftFontStyleCode.GREEN + senderId + MinecraftFontStyleCode.GOLD + "的用户申请与此MCID " + MinecraftFontStyleCode.GREEN + mcid + MinecraftFontStyleCode.GOLD +
+                "绑定，输入/qq confirm " + senderId + " 确认绑定";
+        VarIntString res;
+        try {
+            MinecraftMessageUtil.sendMessageToPlayer(mcid, mcMessage);
+            BindQqUtil.addBind(senderId, mcid);
+            res = new VarIntString("已向玩家" + mcid + "发送申请，该玩家可在MC中输入" +
+                    "/qq confirm " + senderId + " 以确认绑定");
+        } catch (SendBindMessageToPlayerFailException e) {
+            res = new VarIntString("玩家" + mcid + "不在线，请先上线");
+        }
+
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                packetId,
+                res.getBytes()
+        );
     }
 }

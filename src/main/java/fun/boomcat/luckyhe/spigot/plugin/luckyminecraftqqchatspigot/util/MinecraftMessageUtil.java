@@ -1,5 +1,6 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util;
 
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.SendBindMessageToPlayerFailException;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
@@ -21,5 +22,13 @@ public class MinecraftMessageUtil {
 
     public static Collection<? extends Player> getOnlinePlayerList() {
         return server.getOnlinePlayers();
+    }
+
+    public static void sendMessageToPlayer(String player, String message) throws SendBindMessageToPlayerFailException {
+        Player p = server.getPlayer(player);
+        if (p == null || !p.getName().equals(player)) {
+            throw new SendBindMessageToPlayerFailException();
+        }
+        p.sendMessage(message);
     }
 }

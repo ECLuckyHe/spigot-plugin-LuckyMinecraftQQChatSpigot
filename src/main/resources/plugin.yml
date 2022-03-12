@@ -5,3 +5,7 @@ commands:
   mcchat:
     description: 与控制MC和BOT之间的连接相关
     usage: /mcchat
+
+  qq:
+    description: 与绑定QQ相关
+    usage: /qq

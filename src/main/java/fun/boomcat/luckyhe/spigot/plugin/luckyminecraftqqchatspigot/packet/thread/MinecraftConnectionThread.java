@@ -275,7 +275,14 @@ public class MinecraftConnectionThread extends Thread {
 
                         case 0x28: {
 //                            绑定mcid和qq返回
+                            int i = 0;
+                            byte[] data = packet.getData();
+                            VarLong qq = new VarLong(Arrays.copyOfRange(data, i, data.length));
+                            i += qq.getBytesLength();
+                            VarIntString mcid = new VarIntString(Arrays.copyOfRange(data, i, data.length));
 
+                            sendQueue.add(ConnectionPacketSendUtil.getUserBindResultPacket(qq.getValue(), mcid.getContent()));
+                            break;
                         }
 
                         case 0xF0: {
