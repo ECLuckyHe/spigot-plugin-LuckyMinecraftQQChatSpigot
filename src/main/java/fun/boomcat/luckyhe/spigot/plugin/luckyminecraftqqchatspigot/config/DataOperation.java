@@ -1,9 +1,7 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config;
 
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.OpIdExistException;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.OpIdNotExistException;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandExistException;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandNotExistException;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.*;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.UserCommandUtil;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
@@ -141,19 +139,77 @@ public class DataOperation {
 
 
 
-    public static void addRconCommandUserCommand(String name, String command, String mapCommand) throws UserCommandExistException, IOException {
+    public static void addRconCommandUserCommand(String name, String command, String mapCommand) throws UserCommandExistException, IOException, UserCommandConflictException {
 //        添加用户指令
+//        用户指令可能发生冲突，以下是一个例子：
+//        用户指令1：abc  #{aaa}    def
+//        用户指令2：abc    bbb  #{bbb}
+//        若用户执行/abc bbb def，则以上两条指令都符合该条件
+//
+//        因此需要在添加指令前确认新指令是否会与原指令冲突：
+//        情况一：
+//        用户指令1：abc  #{aaa}    def  #{bbb}
+//        用户指令2：abc    bbb  #{aaa}
+//        结论一：长度不同时，指令不冲突
+//
+//        情况二：
+//        用户指令1：abc  #{aaa}  def  #{bbb}
+//        用户指令2：abc     aaa  deg   #{ac}
+//        结论二：长度相同时，对应位置上下都为常量，且有至少一对常量不相同，则不冲突，如例子中的def和deg
+//
+//        情况三：
+//        用户指令1：abc  #{aaa}  def  #{bbb}
+//        用户指令2：abc     aaa  def   #{ac}
+//        结论三：长度相同时，对应位置上下都为常量，且每对常量都相同，则必定冲突
+//               因为除去上下都为常量的列，其它列都至少包含一个参数，至多包含两个参数
+//               同一列中如果一个为参数，一个为常量，则当参数等于另外一条指令对应位置的常量时匹配成功，因此指令冲突
+//               同一列中如果两个都为参数，则填任意值都能匹配成功，因此指令冲突
+//
+//        最终结论：长度相同且所有对应位置上下都为相同常量值的两条用户指令必定冲突
+
         if (isRconCommandUserCommandNameExist(name)) {
             throw new UserCommandExistException();
         }
 
-        List<Map<String, String>> rconCommandUserCommands = getRconCommandUserCommands();
+        List<Map<String, String>> userCommands = getRconCommandUserCommands();
+        List<String> splitNewCommand = UserCommandUtil.splitCommand(command);
+        List<String> splitNewCommandArgs = UserCommandUtil.getCommandArgList(command);
+
+        for (Map<String, String> map : userCommands) {
+            String existCommand = map.get("command");
+            List<String> splitExistCommand = UserCommandUtil.splitCommand(existCommand);
+            List<String> splitExistCommandArgs = UserCommandUtil.getCommandArgList(existCommand);
+
+            if (splitExistCommand.size() != splitNewCommand.size()) {
+//                长度不同不冲突
+                continue;
+            }
+
+//            标记每个常量列都相等的情况，默认为true，若循环中修改为了false，则退出循环
+            boolean isConstantEqual = true;
+            for (int i = 0; i < splitExistCommand.size() && isConstantEqual; i++) {
+//                长度相同则逐个比较
+                String existPart = splitExistCommand.get(i);
+                String newPart = splitNewCommand.get(i);
+
+                if (!(splitExistCommandArgs.contains(existPart)) && (!splitNewCommandArgs.contains(newPart))) {
+//                    都是常量
+                    if (!existPart.equals(newPart)) {
+                        isConstantEqual = false;
+                    }
+                }
+            }
+
+            if (isConstantEqual) {
+                throw new UserCommandConflictException(map.get("name"), map.get("command"), map.get("mapping"));
+            }
+        }
 
         Map<String, String> newMap = new HashMap<>();
         newMap.put("name", name);
         newMap.put("command", command);
         newMap.put("mapping", mapCommand);
-        rconCommandUserCommands.add(newMap);
+        userCommands.add(newMap);
 
         writeFile();
     }

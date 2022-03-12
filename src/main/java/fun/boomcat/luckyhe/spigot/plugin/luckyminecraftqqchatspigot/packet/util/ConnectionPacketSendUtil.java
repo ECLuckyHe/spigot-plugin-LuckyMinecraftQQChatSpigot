@@ -4,6 +4,7 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.Confi
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.DataOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.QqOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.SendBindMessageToPlayerFailException;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandConflictException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandExistException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandNotExistException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarInt;
@@ -396,7 +397,18 @@ public class ConnectionPacketSendUtil {
             DataOperation.addRconCommandUserCommand(name, userCommand, mapCommand);
         } catch (UserCommandExistException e) {
             e.printStackTrace();
+        } catch (UserCommandConflictException e) {
+            VarIntString res = new VarIntString("所添加指令与以下已存在指令冲突：\n" +
+                    "指令名：" + e.getName() + "\n" +
+                    "用户指令：" + e.getCommand() + "\n" +
+                    "实际指令：" + e.getMapping());
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
         } catch (Exception e) {
+            e.printStackTrace();
             VarIntString res = new VarIntString("出现异常，请稍后重试");
             return new Packet(
                     new VarInt(packetId.getBytesLength() + res.getBytesLength()),

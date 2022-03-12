@@ -4,6 +4,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +69,21 @@ public class QqOperation {
             }
         }
         return null;
+    }
+
+    public static List<Long> getQqsByMcid(String mcid) throws FileNotFoundException {
+//        获取绑定了该mcid的qq列表
+        List<Map<String, Object>> dataList = getDataList();
+        List<Long> res = new ArrayList<>();
+        for (Map<String, Object> map : dataList) {
+            if (map.get("id").equals(mcid)) {
+                Object qqObject = map.get("qq");
+                long qq = qqObject instanceof Integer ? (int) qqObject : (long) qqObject;
+                res.add(qq);
+            }
+        }
+
+        return res;
     }
 
     public static void bind(long qq, String id) throws IOException {
