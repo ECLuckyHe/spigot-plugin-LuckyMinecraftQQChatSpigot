@@ -42,7 +42,18 @@ public class UserCommandUtil {
         return res;
     }
 
-    public static String getRealCommand(String content, String command, String mapping) {
+    public static String getRealCommandByContent(List<Map<String, String>> commandMaps, String content) {
+        for (Map<String, String> commandMap : commandMaps) {
+            String realCommand = getRealCommand(content, commandMap.get("command"), commandMap.get("mapping"));
+            if (realCommand != null) {
+                return realCommand;
+            }
+        }
+
+        return null;
+    }
+
+    private static String getRealCommand(String content, String command, String mapping) {
 //        获取实际执行指令
         List<String> contentSplit = splitCommand(content);
         List<String> commandSplit = splitCommand(command);
@@ -58,6 +69,7 @@ public class UserCommandUtil {
         int len = contentSplit.size();
         for (int i = 0; i < len; i++) {
             if (!commandArgList.contains(commandSplit.get(i))) {
+//                不是参数，则为普通单词，判断是否完全符合
                 if (!contentSplit.get(i).equals(commandSplit.get(i))) {
                     return null;
                 }
@@ -65,9 +77,11 @@ public class UserCommandUtil {
 //                是参数
                 String s = map.get(commandSplit.get(i));
                 if (s == null) {
+//                    #{xxx} -> aaa  参数和实际内容对应
                     map.put(commandSplit.get(i), contentSplit.get(i));
                 } else {
                     if (!s.equals(contentSplit.get(i))) {
+//                        同一个参数不同的位置内容不同
                         return null;
                     }
                 }
@@ -83,6 +97,6 @@ public class UserCommandUtil {
             }
         }
 
-        return res.toString();
+        return res.toString().trim();
     }
 }

@@ -228,6 +228,18 @@ public class MinecraftConnectionThread extends Thread {
 
                         case 0x24: {
 //                            发送用户指令
+                            byte[] data = packet.getData();
+                            int i = 0;
+                            VarLong qq = new VarLong(Arrays.copyOfRange(data, i, data.length));
+                            i += qq.getBytesLength();
+                            VarIntString content = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+
+                            addSendQueue(ConnectionPacketSendUtil.getUserCommandResultPacket(
+                                    rconEnable,
+                                    qq.getValue(),
+                                    content.getContent()
+                            ));
+
                             break;
                         }
 

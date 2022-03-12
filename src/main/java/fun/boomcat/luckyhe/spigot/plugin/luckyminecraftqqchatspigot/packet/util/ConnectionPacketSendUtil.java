@@ -1,5 +1,6 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util;
 
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.ConfigOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.DataOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.QqOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.SendBindMessageToPlayerFailException;
@@ -11,15 +12,11 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datat
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.exception.VarIntStringLengthNotMatchException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.exception.VarIntTooBigException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.BindQqUtil;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftFontStyleCode;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.UserCommandUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.*;
 import org.bukkit.entity.Player;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -218,9 +215,98 @@ public class ConnectionPacketSendUtil {
                 try {
                     commandResult = new VarIntString(RconUtil.sendMcCommad(command));
                 } catch (Exception e) {
+                    e.printStackTrace();
                     commandResult = new VarIntString("指令执行失败");
                 }
             }
+        }
+
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                packetId,
+                commandResult.getBytes()
+        );
+    }
+
+    public static Packet getUserCommandResultPacket(boolean rconEnable, long senderId, String content) {
+//        用户指令返回结果
+        VarInt packetId = new VarInt(0x24);
+        VarIntString commandResult;
+        if (!rconEnable) {
+//            未开启rcon
+            commandResult = new VarIntString("MC服务端未开启RCON指令操作，用户指令执行失败");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                    packetId,
+                    commandResult.getBytes()
+            );
+        }
+
+        String mcid;
+        try {
+            mcid = QqOperation.getMcIdByQq(senderId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            commandResult = new VarIntString("发生异常，请稍候重试或联系开发者");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                    packetId,
+                    commandResult.getBytes()
+            );
+        }
+
+        if (mcid == null) {
+            String userBindPrefix = ReplacePlaceholderUtil.replacePlaceholderWithString(
+                    ConfigOperation.getRconCommandUserBindPrefix(),
+                    FormatPlaceholder.SERVER_NAME,
+                    ConfigOperation.getServerName()
+            );
+
+            commandResult = new VarIntString("先发送 " + userBindPrefix + "QQ 绑定QQ才可以使用用户指令");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                    packetId,
+                    commandResult.getBytes()
+            );
+        }
+
+//        获得实际指令
+        String realCommand;
+        try {
+            realCommand = UserCommandUtil.getRealCommandByContent(
+                    DataOperation.getRconCommandUserCommands(),
+                    content
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            commandResult = new VarIntString("发生异常，请稍候重试或联系开发者");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                    packetId,
+                    commandResult.getBytes()
+            );
+        }
+
+//        指令不存在
+        if (realCommand == null) {
+            commandResult = new VarIntString("无该用户指令");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                    packetId,
+                    commandResult.getBytes()
+            );
+        }
+
+//        存在指令，则执行
+        try {
+            commandResult = new VarIntString(RconUtil.sendMcCommad(ReplacePlaceholderUtil.replacePlaceholderWithString(
+                    realCommand,
+                    FormatPlaceholder.PLAYER_NAME,
+                    mcid
+            )));
+        } catch (Exception e) {
+            e.printStackTrace();
+            commandResult = new VarIntString("指令执行失败");
         }
 
         return new Packet(
