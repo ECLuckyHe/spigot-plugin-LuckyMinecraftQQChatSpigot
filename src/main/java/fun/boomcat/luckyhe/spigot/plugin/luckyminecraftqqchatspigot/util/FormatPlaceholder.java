@@ -25,4 +25,6 @@ public class FormatPlaceholder {
     public static String SERVER_NAME = "%serverName%";
 
     public static String ANNOUNCEMENT = "%announcement%";
+
+    public static String PLAYER_NAME = "%playerName%";
 }

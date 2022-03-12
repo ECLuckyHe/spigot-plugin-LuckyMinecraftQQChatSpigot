@@ -2,6 +2,7 @@ package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.thre
 
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.ConfigOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.DataOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandExistException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarInt;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarIntString;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarLong;
@@ -14,6 +15,7 @@ import org.bukkit.Server;
 import java.io.*;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
@@ -166,17 +168,20 @@ public class MinecraftConnectionThread extends Thread {
                     switch (packet.getId().getValue()) {
                         case -1:
                             continue;
+
                         case 0x20:
 //                                回应心跳包
                             VarLong ping = new VarLong(packet.getData());
                             sendQueue.add(ConnectionPacketSendUtil.getPongPacket(ping.getValue()));
                             heartbeatCount = 0;
                             break;
+
                         case 0x21:
 //                                收到要求提供玩家在线信息数据的数据包
                             sendQueue.add(ConnectionPacketSendUtil.getOnlinePlayersPacket());
                             break;
-                        case 0x22:
+
+                        case 0x22: {
 //                                指令
                             int commandIndex = 0;
                             VarLong commandSenderId = new VarLong(packet.getData());
@@ -194,14 +199,16 @@ public class MinecraftConnectionThread extends Thread {
                                     command.getContent()
                             ));
                             break;
-                        case 0x23:
+                        }
+
+                        case 0x23: {
 //                                公告
-                            int announcementIndex = 0;
+                            int i = 0;
                             VarLong announcementSenderId = new VarLong(packet.getData());
-                            announcementIndex += announcementSenderId.getBytesLength();
-                            VarIntString announcementSenderNickname = new VarIntString(Arrays.copyOfRange(packet.getData(), announcementIndex, packet.getData().length));
-                            announcementIndex += announcementSenderNickname.getBytesLength();
-                            VarIntString announcement = new VarIntString(Arrays.copyOfRange(packet.getData(), announcementIndex, packet.getData().length));
+                            i += announcementSenderId.getBytesLength();
+                            VarIntString announcementSenderNickname = new VarIntString(Arrays.copyOfRange(packet.getData(), i, packet.getData().length));
+                            i += announcementSenderNickname.getBytesLength();
+                            VarIntString announcement = new VarIntString(Arrays.copyOfRange(packet.getData(), i, packet.getData().length));
 
                             String announcementToBeSent = ReplacePlaceholderUtil.replacePlaceholderWithString(
                                     ConfigOperation.getAnnouncementFormat(),
@@ -217,7 +224,80 @@ public class MinecraftConnectionThread extends Thread {
 
                             MinecraftMessageUtil.sendMinecraftMessage(announcementToBeSent);
                             break;
-                        case 0xF0:
+                        }
+
+                        case 0x24: {
+//                            发送用户指令
+                            byte[] data = packet.getData();
+                            int i = 0;
+                            VarLong qq = new VarLong(Arrays.copyOfRange(data, i, data.length));
+                            i += qq.getBytesLength();
+                            VarIntString content = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+
+                            addSendQueue(ConnectionPacketSendUtil.getUserCommandResultPacket(
+                                    rconEnable,
+                                    qq.getValue(),
+                                    content.getContent()
+                            ));
+
+                            break;
+                        }
+
+                        case 0x25: {
+//                            添加用户指令
+                            int i = 0;
+                            byte[] data = packet.getData();
+                            VarLong senderId = new VarLong(Arrays.copyOfRange(data, i, data.length));
+                            i += senderId.getBytesLength();
+                            VarIntString name = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+                            i += name.getBytesLength();
+                            VarIntString userCommand = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+                            i += userCommand.getBytesLength();
+                            VarIntString mapCommand = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+
+                            sendQueue.add(ConnectionPacketSendUtil.getAddUserCommandResultPacket(
+                                    senderId.getValue(),
+                                    name.getContent(),
+                                    userCommand.getContent(),
+                                    mapCommand.getContent()
+                            ));
+                            break;
+                        }
+
+                        case 0x26: {
+//                            删除用户指令
+                            int i = 0;
+                            byte[] data = packet.getData();
+                            VarLong senderId = new VarLong(Arrays.copyOfRange(data, i, data.length));
+                            i += senderId.getBytesLength();
+                            VarIntString commandName = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+
+                            sendQueue.add(ConnectionPacketSendUtil.getDelUserCommandResultPacket(
+                                    senderId.getValue(),
+                                    commandName.getContent()
+                            ));
+                            break;
+                        }
+
+                        case 0x27: {
+//                            获取用户指令列表（mcchat指令）
+                            sendQueue.add(ConnectionPacketSendUtil.getMcChatUserCommandResultPacket());
+                            break;
+                        }
+
+                        case 0x28: {
+//                            绑定mcid和qq返回
+                            int i = 0;
+                            byte[] data = packet.getData();
+                            VarLong qq = new VarLong(Arrays.copyOfRange(data, i, data.length));
+                            i += qq.getBytesLength();
+                            VarIntString mcid = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+
+                            sendQueue.add(ConnectionPacketSendUtil.getUserBindResultPacket(qq.getValue(), mcid.getContent()));
+                            break;
+                        }
+
+                        case 0xF0: {
 //                                关闭包
                             VarIntString exitMsg = new VarIntString(packet.getData());
                             logInfo(threadName, "对方要求断开连接，原因：" + exitMsg.getContent());
@@ -241,15 +321,21 @@ public class MinecraftConnectionThread extends Thread {
                             isConnected = false;
                             socket.close();
                             break;
-                        case 0x11:
+                        }
+
+                        case 0x11: {
 //                                原封不动发送到服内的消息包
                             VarIntString msg = new VarIntString(packet.getData());
                             MinecraftMessageUtil.sendMinecraftMessage(msg.getContent());
                             break;
-                        case 0x10:
+                        }
+
+                        case 0x10: {
 //                                来自群内的消息
                             ConnectionPacketReceiveUtil.handleMessageFromBot(formatFromBot, packet, sessionName);
                             break;
+                        }
+
                     }
 
                 } catch (Exception e) {

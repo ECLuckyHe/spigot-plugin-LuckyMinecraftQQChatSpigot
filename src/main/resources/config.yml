@@ -80,21 +80,26 @@
 # bot中定义了一些与bot端插件相关的配置
 bot:
   # 连接bot端的地址和端口
+  # host: "localhost"
   host: "localhost"
+  # port: 54100
   port: 54100
   #
   # 连接失败尝试重连时间
   # 当连接失败时经过几秒后重新尝试连接
+  # retryTimes: 5
   retryTimes: 5
   #
   # 会话号
   # 若提供的会话号不存在，则拒绝连接，并要求使用/mcchat reload指令重新开启连接尝试
+  # sessionId: 12345
   sessionId: 12345
 
 
 # 服务器名字
 # 在下方的消息格式定义中可以使用占位符%serverName%来获得服务器名字
 # 注意：多个同名服务器接入同一个会话有可能产生不可预测的问题（并非严重问题）
+# serverName: "MinecraftServer"
 serverName: "MinecraftServer"
 
 
@@ -112,6 +117,7 @@ format:
   # %senderNickname%    发送者昵称
   # %senderGroupNickname%    发送者的群昵称（若无，则此占位符会被自动填充发送者昵称）
   # %message%    消息内容
+  # fromBot: "[%groupNickname%] <%senderGroupNickname%> %message%"
   fromBot: "[%groupNickname%] <%senderGroupNickname%> %message%"
   ######################################################################
 
@@ -121,25 +127,30 @@ format:
   #
   # 该消息为当玩家进入游戏时发送
   # %playerName%    加入游戏玩家的ID
+  # join: "[%serverName%] %playerName% 加入了游戏"
   join: "[%serverName%] %playerName% 加入了游戏"
   #
   # 该消息为当玩家离开游戏时发送
   # %playerName%    离开游戏玩家的ID
+  # quit: "[%serverName%] %playerName% 离开了游戏"
   quit: "[%serverName%] %playerName% 离开了游戏"
   #
   # 该消息为当玩家发送消息时发送
   # %playerName%    发送消息的玩家ID
   # %message%    消息内容
+  # message: "[%serverName%] <%playerName%> %message%"
   message: "[%serverName%] <%playerName%> %message%"
   #
   # 该消息为当玩家死亡时发送
   # %playerName%    死亡的玩家ID
   # %deathMessage%    死亡信息（此信息已经包含玩家ID，相当于游戏里聊天框显示的死亡信息）
+  # death: "[%serverName%] %deathMessage%"
   death: "[%serverName%] %deathMessage%"
   #
   # 该消息为当玩家被踢出时发送
   # %playerName%    被踢的玩家ID
   # %kickReason%    踢出原因
+  # kick: "[%serverName%] %playerName% 被踢了，因为 %kickReason%"
   kick: "[%serverName%] %playerName% 被踢了，因为 %kickReason%"
   ######################################################################
 
@@ -160,8 +171,10 @@ onlinePlayers:
     # 返回的在线人数列表的格式
     # %players%    玩家列表
     # %count%    人数（数字）
+    # format: "[%serverName%] 当前%count%名玩家在线\n%players%"
     format: "[%serverName%] 当前%count%名玩家在线\n%players%"
     # 玩家列表的分隔符（最后一名玩家后面不补充分隔符）
+    # separator: "\n"
     separator: "\n"
 
 
@@ -179,21 +192,36 @@ rconCommand:
   # rcon.password的内容填入以下password中
   # 否则将无法发送MC指令
   # 至于如何设定op的QQ号，请在游戏内执行/mcchat指令
+  # enabled: false
   enabled: false
 
   # rcon端口
+  # port: 25575
   port: 25575
 
   # rcon密码
+  # password: "abcdefg"
   password: "abcdefg"
 
-  # 指令格式前缀
+  # op指令格式前缀
   # 当op在群内发送的消息中包含以下前缀时，前缀后面的内容为指令内容
-  prefix: "[%serverName%]/"
+  # prefix: "[%serverName%]#"
+  prefix: "[%serverName%]#"
+
+  # 用户指令格式前缀
+  # 当用户在群内发送的消息中包含以下前缀时，前缀后面的内容为用户指令内容
+  # userPrefix: "[%serverName%]/"
+  userPrefix: "[%serverName%]/"
+
+  # 绑定用户mcid与qq的指令前缀
+  # 当用户在群内发送的消息中包含以下前缀时，前缀后面的内容为绑定的mc中的id
+  # userBindPrefix: "[%serverName%]^"
+  userBindPrefix: "[%serverName%]^"
 
   # 指令执行结果格式
   # 该内容将被发送到群里
   # %result%    执行结果
+  # resultFormat: "[%serverName%] 执行结果：\n%result%"
   resultFormat: "[%serverName%] 执行结果：\n%result%"
 
 
@@ -202,6 +230,7 @@ rconCommand:
 # %announcement%    发送公告内容
 # %senderNickname%    发送者昵称
 # %senderId%    发送者QQ
+# announcementFormat: "§d---------------公告---------------\n§6%announcement%\n发布者：%senderNickname%（QQ %senderId%）"
 announcementFormat: "§d---------------公告---------------\n§6%announcement%\n发布者：%senderNickname%（QQ %senderId%）"
 
 #####################以下内容为非必要修改选项#####################
@@ -212,14 +241,17 @@ announcementFormat: "§d---------------公告---------------\n§6%announcement%\
 info:
   #
   # 插件被加载时发送此消息
+  # onEnable: "§d[LuckyChat] §6插件被加载"
   onEnable: "§d[LuckyChat] §6插件被加载"
   #
   # 插件被卸载时发送此消息
+  # onDisable: "§d[LuckyChat] §6插件被卸载"
   onDisable: "§d[LuckyChat] §6插件被卸载"
   #
   # 请求被bot端拒绝时时发送此消息
   # 此后将不会再发送连接请求，并要求输入/mcchat reload重新加载配置文件
   # %errorMessage%    bot端返回的错误信息
+  # onRequestError: "§d[LuckyChat] §c连接失败，错误信息：%errorMessage%\n§d[LuckyChat] §c请修改配置文件后执行/mcchat reload指令"
   onRequestError: "§d[LuckyChat] §c连接失败，错误信息：%errorMessage%\n§d[LuckyChat] §c请修改配置文件后执行/mcchat reload指令"
   #
   ##############################################################
@@ -230,16 +262,20 @@ info:
   # %remoteAddress% 远程地址（实际为bot端收到的连接地址，即这台主机的ip地址）
   #
   # 会话连接成功时发送此消息
+  # onConnected: "§d[LuckyChat] §6已连接到会话 §a%sessionName%"
   onConnected: "§d[LuckyChat] §6已连接到会话 §a%sessionName%"
   #
   # 未收到心跳包时发送此消息，然后断开连接
   # %waitTime%    等待时间（数字，单位秒）
+  # onPingFail: "§d[LuckyChat] §c已经%waitTime%秒未接收到心跳包，关闭连接"
   onPingFail: "§d[LuckyChat] §c已经%waitTime%秒未接收到心跳包，关闭连接"
   #
   # 当bot端要求断开连接时发送此消息，接着断开连接
   # %reason% bot端要求断开连接的原因
+  # onBotRequestClose: "§d[LuckyChat] §cbot要求断开连接，原因：%reason%"
   onBotRequestClose: "§d[LuckyChat] §cbot要求断开连接，原因：%reason%"
   #
   # 断开连接时发送此消息，接着重新尝试连接
+  # onConnectionDisconnect: "§d[LuckyChat] §c连接已断开，稍后重新尝试连接"
   onConnectionDisconnect: "§d[LuckyChat] §c连接已断开，稍后重新尝试连接"
   ##############################################################

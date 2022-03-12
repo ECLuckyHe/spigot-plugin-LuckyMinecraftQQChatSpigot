@@ -1,18 +1,26 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util;
 
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.ConfigOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.DataOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.QqOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.SendBindMessageToPlayerFailException;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandConflictException;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandExistException;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserCommandNotExistException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarInt;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarIntString;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarLong;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.exception.VarIntStringLengthNotMatchException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.exception.VarIntTooBigException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.*;
 import org.bukkit.entity.Player;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public class ConnectionPacketSendUtil {
     public static Packet getConnectPacket(
@@ -27,7 +35,9 @@ public class ConnectionPacketSendUtil {
             String onlinePlayersCommandResponseFormat,
             String onlinePlayersCommandResponseSeparator,
             String rconCommandPrefix,
-            String rconCommandResultFormat
+            String rconCommandResultFormat,
+            String userCommandPrefix,
+            String userBindPrefix
     ) {
         VarInt packetId = new VarInt(0x00);
 
@@ -50,10 +60,13 @@ public class ConnectionPacketSendUtil {
         VarIntString rcp = new VarIntString(rconCommandPrefix);
         VarIntString rcrf = new VarIntString(rconCommandResultFormat);
 
+        VarIntString ucp = new VarIntString(userCommandPrefix);
+        VarIntString ubp = new VarIntString(userBindPrefix);
+
         int totalLengthInt = packetId.getBytesLength() + si.getBytesLength() + sn.getBytesLength() +
                 jfs.getBytesLength() + qfs.getBytesLength() + mfs.getBytesLength() + dfs.getBytesLength() +
                 kfs.getBytesLength() + opcc.getBytesLength() + opcrf.getBytesLength() + opcrs.getBytesLength() +
-                rcp.getBytesLength() + rcrf.getBytesLength();
+                rcp.getBytesLength() + rcrf.getBytesLength() + ucp.getBytesLength() + ubp.getBytesLength();
         for (VarIntString opcca : opccs) {
             totalLengthInt += opcca.getBytesLength();
         }
@@ -76,7 +89,9 @@ public class ConnectionPacketSendUtil {
                 opcrf.getBytes(),
                 opcrs.getBytes(),
                 rcp.getBytes(),
-                rcrf.getBytes()
+                rcrf.getBytes(),
+                ucp.getBytes(),
+                ubp.getBytes()
         );
 
         return new Packet(
@@ -201,6 +216,7 @@ public class ConnectionPacketSendUtil {
                 try {
                     commandResult = new VarIntString(RconUtil.sendMcCommad(command));
                 } catch (Exception e) {
+                    e.printStackTrace();
                     commandResult = new VarIntString("指令执行失败");
                 }
             }
@@ -213,5 +229,362 @@ public class ConnectionPacketSendUtil {
         );
     }
 
+    public static Packet getUserCommandResultPacket(boolean rconEnable, long senderId, String content) {
+//        用户指令返回结果
+        VarInt packetId = new VarInt(0x24);
+        VarIntString commandResult;
+        if (!rconEnable) {
+//            未开启rcon
+            commandResult = new VarIntString("MC服务端未开启RCON指令操作，用户指令执行失败");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                    packetId,
+                    commandResult.getBytes()
+            );
+        }
 
+        String mcid;
+        try {
+            mcid = QqOperation.getMcIdByQq(senderId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            commandResult = new VarIntString("发生异常，请稍候重试或联系开发者");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                    packetId,
+                    commandResult.getBytes()
+            );
+        }
+
+        if (mcid == null) {
+            String userBindPrefix = ReplacePlaceholderUtil.replacePlaceholderWithString(
+                    ConfigOperation.getRconCommandUserBindPrefix(),
+                    FormatPlaceholder.SERVER_NAME,
+                    ConfigOperation.getServerName()
+            );
+
+            commandResult = new VarIntString("先发送 " + userBindPrefix + "QQ 绑定QQ才可以使用用户指令");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                    packetId,
+                    commandResult.getBytes()
+            );
+        }
+
+//        获得实际指令
+        String realCommand;
+        try {
+            realCommand = UserCommandUtil.getRealCommandByContent(
+                    DataOperation.getRconCommandUserCommands(),
+                    content
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            commandResult = new VarIntString("发生异常，请稍候重试或联系开发者");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                    packetId,
+                    commandResult.getBytes()
+            );
+        }
+
+//        指令不存在
+        if (realCommand == null) {
+            commandResult = new VarIntString("无该用户指令");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                    packetId,
+                    commandResult.getBytes()
+            );
+        }
+
+//        存在指令，则执行
+        try {
+            commandResult = new VarIntString(RconUtil.sendMcCommad(ReplacePlaceholderUtil.replacePlaceholderWithString(
+                    realCommand,
+                    FormatPlaceholder.PLAYER_NAME,
+                    mcid
+            )));
+        } catch (Exception e) {
+            e.printStackTrace();
+            commandResult = new VarIntString("指令执行失败");
+        }
+
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
+                packetId,
+                commandResult.getBytes()
+        );
+    }
+
+    public static Packet getAddUserCommandResultPacket(long id, String name, String userCommand, String mapCommand) {
+//        添加用户指令返回结果
+        VarInt packetId = new VarInt(0x25);
+
+//        op验证
+        boolean rconCommandOpIdExist = false;
+        try {
+            rconCommandOpIdExist = DataOperation.isRconCommandOpIdExist(id);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        if (!rconCommandOpIdExist) {
+            VarIntString res = new VarIntString("用户 " + id + " 不是MC端远程op，请在MC端执行以下指令获得op权限：\n" +
+                    "/mcchat addop " + id);
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        获取一遍
+        Map<String, String> commandMap;
+        try {
+            commandMap = DataOperation.getRconCommandUserCommandByName(name);
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        若找到了，则说明已存在，不进行添加并发送已存在的指令信息
+        if (commandMap != null) {
+            String n = commandMap.get("name");
+            String c = commandMap.get("command");
+            String m = commandMap.get("mapping");
+            VarIntString res = new VarIntString("用户指令 " + name + " 已存在：\n" +
+                    "指令名：" + n + "\n" +
+                    "用户指令：" + c + "\n" +
+                    "实际指令：" + m);
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        审核是否按照格式要求
+        userCommand = UserCommandUtil.craftCommand(UserCommandUtil.splitCommand(userCommand));
+        mapCommand = UserCommandUtil.craftCommand(UserCommandUtil.splitCommand(mapCommand));
+        List<String> userCommandStrings = UserCommandUtil.getCommandArgList(userCommand);
+        List<String> mapCommandStrings = UserCommandUtil.getCommandArgList(mapCommand);
+
+        for (String mapCommandString : mapCommandStrings) {
+            userCommandStrings.removeIf(o -> o.equals(mapCommandString));
+        }
+
+//        有未使用的参数
+        if (userCommandStrings.size() != 0) {
+            StringBuilder sb = new StringBuilder("创建用户指令失败，以下参数未使用：\n");
+            for (String s : userCommandStrings) {
+                sb.append(s).append("\n");
+            }
+            VarIntString res = new VarIntString(sb.toString());
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        正式添加
+        try {
+            DataOperation.addRconCommandUserCommand(name, userCommand, mapCommand);
+        } catch (UserCommandExistException e) {
+            e.printStackTrace();
+        } catch (UserCommandConflictException e) {
+            VarIntString res = new VarIntString("所添加指令与以下已存在指令冲突：\n" +
+                    "指令名：" + e.getName() + "\n" +
+                    "用户指令：" + e.getCommand() + "\n" +
+                    "实际指令：" + e.getMapping());
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        再获取一次
+        try {
+            commandMap = DataOperation.getRconCommandUserCommandByName(name);
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+        String n = commandMap.get("name");
+        String c = commandMap.get("command");
+        String m = commandMap.get("mapping");
+        VarIntString res = new VarIntString("用户指令 " + name + " 已添加：\n" +
+                "指令名：" + n + "\n" +
+                "用户指令：" + c + "\n" +
+                "实际指令：" + m);
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                packetId,
+                res.getBytes()
+        );
+    }
+
+    public static Packet getDelUserCommandResultPacket(long id, String name) {
+//        删除用户指令返回
+        VarInt packetId = new VarInt(0x26);
+
+        //        op验证
+        boolean rconCommandOpIdExist = false;
+        try {
+            rconCommandOpIdExist = DataOperation.isRconCommandOpIdExist(id);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        if (!rconCommandOpIdExist) {
+            VarIntString res = new VarIntString("用户 " + id + " 不是MC端远程op，请在MC端执行以下指令获得op权限：\n" +
+                    "/mcchat addop " + id);
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        获取一次
+        Map<String, String> commandMap = null;
+        try {
+            commandMap = DataOperation.getRconCommandUserCommandByName(name);
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        判断，若不存在则不删除
+        if (commandMap == null) {
+            VarIntString res = new VarIntString("不存在用户指令" + name);
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        删除操作
+        try {
+            DataOperation.delRconCommandUserCommand(name);
+        } catch (UserCommandNotExistException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+        boolean isExist;
+        try {
+            isExist = DataOperation.isRconCommandUserCommandNameExist(name);
+        } catch (Exception e) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+        if (isExist) {
+            VarIntString res = new VarIntString("出现异常，请稍后重试");
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+        String n = commandMap.get("name");
+        String c = commandMap.get("command");
+        String m = commandMap.get("mapping");
+        VarIntString res = new VarIntString("用户指令" + name + "已删除：\n" +
+                "指令名：" + n + "\n" +
+                "用户指令：" + c + "\n" +
+                "实际指令：" + m);
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                packetId,
+                res.getBytes()
+        );
+    }
+
+    public static Packet getMcChatUserCommandResultPacket() throws FileNotFoundException {
+//        mcchat指令获取用户指令列表
+        VarInt packetId = new VarInt(0x27);
+        List<Map<String, String>> rconCommandUserCommands = DataOperation.getRconCommandUserCommands();
+        VarInt commandLength = new VarInt(rconCommandUserCommands.size());
+
+        int packetLength = packetId.getBytesLength() + commandLength.getBytesLength();
+        byte[] data = commandLength.getBytes();
+        for (Map<String, String> map : rconCommandUserCommands) {
+            VarIntString name = new VarIntString(map.get("name"));
+            VarIntString command = new VarIntString(map.get("command"));
+            VarIntString mapping = new VarIntString(map.get("mapping"));
+            packetLength += name.getBytesLength() + command.getBytesLength() + mapping.getBytesLength();
+            data = ByteUtil.byteMergeAll(
+                    data,
+                    name.getBytes(),
+                    command.getBytes(),
+                    mapping.getBytes()
+            );
+        }
+
+        return new Packet(
+                new VarInt(packetLength),
+                packetId,
+                data
+        );
+    }
+
+    public static Packet getUserBindResultPacket(long senderId, String mcid) {
+//        绑定mcid和qq返回结果
+        VarInt packetId = new VarInt(0x28);
+
+        String mcMessage = MinecraftFontStyleCode.GOLD + "QQ号为" + MinecraftFontStyleCode.GREEN + senderId + MinecraftFontStyleCode.GOLD + "的用户申请与此MCID " + MinecraftFontStyleCode.GREEN + mcid + MinecraftFontStyleCode.GOLD +
+                "绑定，输入/qq confirm " + senderId + " 确认绑定";
+        VarIntString res;
+        try {
+            MinecraftMessageUtil.sendMessageToPlayer(mcid, mcMessage);
+            BindQqUtil.addBind(senderId, mcid);
+            res = new VarIntString("已向玩家" + mcid + "发送申请，该玩家可在MC中输入" +
+                    "/qq confirm " + senderId + " 以确认绑定");
+        } catch (SendBindMessageToPlayerFailException e) {
+            res = new VarIntString("玩家" + mcid + "不在线，请先上线");
+        }
+
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                packetId,
+                res.getBytes()
+        );
+    }
 }
