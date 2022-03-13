@@ -166,6 +166,10 @@ public class DataOperation {
 //               同一列中如果两个都为参数，则填任意值都能匹配成功，因此指令冲突
 //
 //        最终结论：长度相同且所有对应位置上下都为相同常量值的两条用户指令必定冲突
+//
+//        * 未考虑如下不冲突情况：
+//        用户指令1：abc  #{aaa}     def  #{aaa}
+//        用户指令2：abc     bcd  #{aaa}     acg
 
         if (isRconCommandUserCommandNameExist(name)) {
             throw new UserCommandExistException();

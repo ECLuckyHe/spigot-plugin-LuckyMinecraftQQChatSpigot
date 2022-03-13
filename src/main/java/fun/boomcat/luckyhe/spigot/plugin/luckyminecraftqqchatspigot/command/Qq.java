@@ -1,6 +1,7 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.command;
 
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.QqOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserBindNotExistException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.BindQqUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftFontStyleCode;
 import org.bukkit.command.Command;
@@ -30,12 +31,7 @@ public class Qq implements CommandExecutor {
 
         int len = strings.length;
         if (len == 0) {
-            commandSender.sendMessage(addPrefix("帮助菜单："));
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " list    查看申请绑定此id的QQ");
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " deny <QQ>    拒绝该QQ要求与该id绑定的申请");
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " confirm <QQ>    同意该QQ要求与id绑定的申请");
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " bound    查看已绑定此id的QQ");
-            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " unbind <QQ>    将该QQ与该id解绑");
+            onHelp(commandSender, commandName);
             return true;
         }
 
@@ -91,12 +87,25 @@ public class Qq implements CommandExecutor {
                 break;
             }
             case "unbind": {
-
+                onUnbind(Arrays.copyOfRange(strings, 1, strings.length), commandSender, commandName);
+                break;
+            }
+            default: {
+                onHelp(commandSender, commandName);
                 break;
             }
         }
 
         return true;
+    }
+
+    private void onHelp(CommandSender commandSender, String commandName) {
+        commandSender.sendMessage(addPrefix("帮助菜单："));
+        commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " list    查看申请绑定此id的QQ");
+        commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " deny <QQ>    拒绝该QQ要求与该id绑定的申请");
+        commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " confirm <QQ>    同意该QQ要求与id绑定的申请");
+        commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " bound    查看已绑定此id的QQ");
+        commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " unbind <QQ>    将该QQ与该id解绑");
     }
 
     private void onDeny(Object[] args, CommandSender commandSender, String commandName) {
@@ -156,4 +165,36 @@ public class Qq implements CommandExecutor {
             commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "已同意QQ " + MinecraftFontStyleCode.GREEN + qq + MinecraftFontStyleCode.GOLD + "的绑定申请");
         }
     }
+
+    private void onUnbind(Object[] args, CommandSender commandSender, String commandName) {
+        int len = args.length;
+        if (len == 0) {
+            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " unbind <QQ>    将该QQ与该id解绑");
+            return;
+        }
+
+        String unbindQqString = args[0].toString();
+        long unbindQq;
+        try {
+            unbindQq = Long.parseLong(unbindQqString);
+        } catch (NumberFormatException e) {
+            commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " unbind <QQ>    将该QQ与该id解绑");
+            return;
+        }
+
+        try {
+            QqOperation.unbind(unbindQq, commandSender.getName());
+        } catch (UserBindNotExistException e) {
+            commandSender.sendMessage(MinecraftFontStyleCode.RED + "解绑失败：该QQ未与该id绑定");
+            return;
+        } catch (Exception e) {
+            e.printStackTrace();
+            commandSender.sendMessage(MinecraftFontStyleCode.RED + "在解绑时发生异常，请稍候重试或联系开发者");
+            return;
+        }
+
+        commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "已成功解绑QQ " + MinecraftFontStyleCode.GREEN + unbindQq);
+    }
+
+
 }

@@ -263,7 +263,9 @@ public class ConnectionPacketSendUtil {
                     ConfigOperation.getServerName()
             );
 
-            commandResult = new VarIntString("先发送 " + userBindPrefix + "QQ 绑定QQ才可以使用用户指令");
+            commandResult = new VarIntString("先发送\n" +
+                    "" + userBindPrefix + "你的mc的id\n" +
+                    "进行绑定后才可以使用用户指令");
             return new Packet(
                     new VarInt(packetId.getBytesLength() + commandResult.getBytesLength()),
                     packetId,
