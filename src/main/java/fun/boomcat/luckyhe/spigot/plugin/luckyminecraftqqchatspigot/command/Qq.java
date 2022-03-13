@@ -2,19 +2,24 @@ package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.command;
 
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.QqOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserBindNotExistException;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.BindQqUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftFontStyleCode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public class Qq implements CommandExecutor {
+public class Qq implements TabExecutor {
     private JavaPlugin plugin;
 
     public Qq(JavaPlugin plugin) {
@@ -197,4 +202,63 @@ public class Qq implements CommandExecutor {
     }
 
 
+    @Override
+    public List<String> onTabComplete(CommandSender commandSender, Command command, String s, String[] strings) {
+        List<String> list = new ArrayList<>();
+//        考虑未传入参数的情况
+        boolean isReadyInputNext = true;
+        for (int i = 0; i < strings.length; i++) {
+            if (!strings[i].equals("")) {
+                list.add(strings[i]);
+                isReadyInputNext = false;
+            } else if (i == strings.length - 1) {
+                isReadyInputNext = true;
+            }
+        }
+
+        int current = list.size() + (isReadyInputNext ? 1 : 0);
+        switch (current) {
+            case 1: {
+                return Arrays.asList("list", "deny", "confirm", "bound", "unbind");
+            }
+            case 2: {
+                switch (list.get(0)) {
+                    case "unbind": {
+                        List<Long> qqsByMcid;
+                        try {
+                            qqsByMcid = QqOperation.getQqsByMcid(commandSender.getName());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return Collections.emptyList();
+                        }
+
+                        List<String> res = new ArrayList<>();
+                        for (long qq : qqsByMcid) {
+                            res.add(String.valueOf(qq));
+                        }
+
+                        return res;
+                    }
+                    case "confirm":
+                    case "deny": {
+                        List<Long> qqsByMcid = BindQqUtil.getQqsByMcid(commandSender.getName());
+                        List<String> res = new ArrayList<>();
+                        for (long qq : qqsByMcid) {
+                            res.add(String.valueOf(qq));
+                        }
+
+                        return res;
+                    }
+                    case "list":
+                    case "bound":
+                    default: {
+                        return Collections.emptyList();
+                    }
+                }
+            }
+            default: {
+                return Collections.emptyList();
+            }
+        }
+    }
 }
