@@ -1,5 +1,6 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config;
 
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.UserBindNotExistException;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
@@ -84,6 +85,27 @@ public class QqOperation {
         }
 
         return res;
+    }
+
+    public static void unbind(long qq, String id) throws IOException, UserBindNotExistException {
+        List<Map<String, Object>> dataList = getDataList();
+
+        Map<String, Object> existMap = null;
+        for (Map<String, Object> map : dataList) {
+            Object o = map.get("qq");
+            long existQq = o instanceof Integer ? (int) o : (long) o;
+            if (existQq == qq && map.get("id").equals(id)) {
+                existMap = map;
+            }
+        }
+
+        if (existMap == null) {
+            throw new UserBindNotExistException();
+        }
+
+        getDataList().remove(existMap);
+
+        writeFile();
     }
 
     public static void bind(long qq, String id) throws IOException {

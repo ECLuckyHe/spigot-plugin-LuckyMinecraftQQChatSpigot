@@ -76,7 +76,8 @@ public class ClientMainThread extends Thread {
                         ConfigOperation.getRconCommandPrefix(),
                         ConfigOperation.getRconCommandResultFormat(),
                         ConfigOperation.getRconCommandUserPrefix(),
-                        ConfigOperation.getRconCommandUserBindPrefix()
+                        ConfigOperation.getRconCommandUserBindPrefix(),
+                        ConfigOperation.getRconCommandGetUserCommand()
                 ).getBytes());
 
 //                睡眠一秒，确保对方已收到

@@ -107,6 +107,10 @@ public class ConfigOperation {
         return config.getString("rconCommand.userBindPrefix");
     }
 
+    public static List<String> getRconCommandGetUserCommand() {
+        return config.getStringList("rconCommand.getUserCommand");
+    }
+
     public static boolean getRconCommandEnabled() {
         return  config.getBoolean("rconCommand.enabled");
     }
