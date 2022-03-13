@@ -37,7 +37,8 @@ public class ConnectionPacketSendUtil {
             String rconCommandPrefix,
             String rconCommandResultFormat,
             String userCommandPrefix,
-            String userBindPrefix
+            String userBindPrefix,
+            List<String> getUserCommandsCommands
     ) {
         VarInt packetId = new VarInt(0x00);
 
@@ -63,13 +64,26 @@ public class ConnectionPacketSendUtil {
         VarIntString ucp = new VarIntString(userCommandPrefix);
         VarIntString ubp = new VarIntString(userBindPrefix);
 
+        VarInt guccc = new VarInt(getUserCommandsCommands.size());
+        VarIntString[] guccs = new VarIntString[guccc.getValue()];
+
+        for (int i = 0; i < guccs.length; i++) {
+            guccs[i] = new VarIntString(getUserCommandsCommands.get(i));
+        }
+
         int totalLengthInt = packetId.getBytesLength() + si.getBytesLength() + sn.getBytesLength() +
                 jfs.getBytesLength() + qfs.getBytesLength() + mfs.getBytesLength() + dfs.getBytesLength() +
                 kfs.getBytesLength() + opcc.getBytesLength() + opcrf.getBytesLength() + opcrs.getBytesLength() +
-                rcp.getBytesLength() + rcrf.getBytesLength() + ucp.getBytesLength() + ubp.getBytesLength();
+                rcp.getBytesLength() + rcrf.getBytesLength() + ucp.getBytesLength() + ubp.getBytesLength() +
+                guccc.getBytesLength();
         for (VarIntString opcca : opccs) {
             totalLengthInt += opcca.getBytesLength();
         }
+        for (VarIntString gucc : guccs) {
+            totalLengthInt += gucc.getBytesLength();
+        }
+
+//        上：拼接总长度；下：拼接数据
 
         byte[] data = ByteUtil.byteMergeAll(
                 si.getBytes(),
@@ -91,8 +105,12 @@ public class ConnectionPacketSendUtil {
                 rcp.getBytes(),
                 rcrf.getBytes(),
                 ucp.getBytes(),
-                ubp.getBytes()
+                ubp.getBytes(),
+                guccc.getBytes()
         );
+        for (VarIntString gucc : guccs) {
+            data = ByteUtil.byteMergeAll(data, gucc.getBytes());
+        }
 
         return new Packet(
                 new VarInt(totalLengthInt),
@@ -539,13 +557,13 @@ public class ConnectionPacketSendUtil {
         );
     }
 
-    public static Packet getMcChatUserCommandResultPacket() throws FileNotFoundException {
-//        mcchat指令获取用户指令列表
-        VarInt packetId = new VarInt(0x27);
+    public static Packet getMcChatUserCommandResultPacket(int packetId) throws FileNotFoundException {
+//        获取用户指令列表（由于两个包回复内容相同，故在上一层指定包id
+        VarInt pid = new VarInt(packetId);
         List<Map<String, String>> rconCommandUserCommands = DataOperation.getRconCommandUserCommands();
         VarInt commandLength = new VarInt(rconCommandUserCommands.size());
 
-        int packetLength = packetId.getBytesLength() + commandLength.getBytesLength();
+        int packetLength = pid.getBytesLength() + commandLength.getBytesLength();
         byte[] data = commandLength.getBytes();
         for (Map<String, String> map : rconCommandUserCommands) {
             VarIntString name = new VarIntString(map.get("name"));
@@ -562,7 +580,7 @@ public class ConnectionPacketSendUtil {
 
         return new Packet(
                 new VarInt(packetLength),
-                packetId,
+                pid,
                 data
         );
     }

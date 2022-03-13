@@ -281,7 +281,13 @@ public class MinecraftConnectionThread extends Thread {
 
                         case 0x27: {
 //                            获取用户指令列表（mcchat指令）
-                            sendQueue.add(ConnectionPacketSendUtil.getMcChatUserCommandResultPacket());
+                            sendQueue.add(ConnectionPacketSendUtil.getMcChatUserCommandResultPacket(0x27));
+                            break;
+                        }
+
+                        case 0x29: {
+//                            获取用户指令列表（普通用户）
+                            sendQueue.add(ConnectionPacketSendUtil.getMcChatUserCommandResultPacket(0x29));
                             break;
                         }
 
