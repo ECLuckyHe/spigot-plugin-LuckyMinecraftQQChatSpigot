@@ -106,7 +106,7 @@ public class Qq implements TabExecutor {
 
     private void onHelp(CommandSender commandSender, String commandName) {
         commandSender.sendMessage(addPrefix("帮助菜单："));
-        commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " list    查看申请绑定此id的QQ");
+        commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " list    查看正在申请绑定此id的QQ");
         commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " deny <QQ>    拒绝该QQ要求与该id绑定的申请");
         commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " confirm <QQ>    同意该QQ要求与id绑定的申请");
         commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "/" + commandName + " bound    查看已绑定此id的QQ");
