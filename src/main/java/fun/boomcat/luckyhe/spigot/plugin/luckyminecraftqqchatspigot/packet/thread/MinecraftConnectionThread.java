@@ -172,7 +172,7 @@ public class MinecraftConnectionThread extends Thread {
                         case 0x20:
 //                                回应心跳包
                             VarLong ping = new VarLong(packet.getData());
-                            sendQueue.add(ConnectionPacketSendUtil.getPongPacket(ping.getValue()));
+                            sendQueue.add(ConnectionPacketSendUtil.getPongPacket(ping.getValue() + heartbeatInterval));
                             heartbeatCount = 0;
                             break;
 
