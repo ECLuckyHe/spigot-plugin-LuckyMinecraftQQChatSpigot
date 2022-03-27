@@ -14,7 +14,9 @@ import org.bukkit.Server;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
 
@@ -94,28 +96,13 @@ public class ClientMainThread extends Thread {
                         sessionName = new VarIntString(packet.getData());
                         address = new VarIntString(Arrays.copyOfRange(packet.getData(), sessionName.getBytesLength(), packet.getData().length));
                         heartbeatInterval = new VarInt(Arrays.copyOfRange(packet.getData(), sessionName.getBytesLength() + address.getBytesLength(), packet.getData().length));
-                        logger.info("连接成功，收到返回会话名：" + sessionName.getContent() + "，对方收到连接地址：" + address.getContent() + "，心跳包间隔：" + heartbeatInterval.getValue() + "秒");
-
-                        MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
-                                ConfigOperation.getInfoOnConnected(),
-                                FormatPlaceholder.SERVER_NAME,
-                                ConfigOperation.getServerName(),
-                                FormatPlaceholder.SESSION_ID,
-                                String.valueOf(ConfigOperation.getBotSessionId()),
-                                FormatPlaceholder.SESSION_NAME,
-                                sessionName.getContent(),
-                                FormatPlaceholder.PING_INTERVAL,
-                                String.valueOf(heartbeatInterval.getValue()),
-                                FormatPlaceholder.REMOTE_ADDRESS,
-                                address.getContent()
-                        ));
 
                         break;
                     case 0x01:
 //                        连接异常
                         VarIntString errorMsg = new VarIntString(packet.getData());
                         logger.warning("连接失败，错误信息：" + errorMsg.getContent());
-                        logger.warning("请修改配置文件后执行/reload指令");
+                        logger.warning("请稍候或修改配置文件后执行/reload指令");
 
                         MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
                                 ConfigOperation.getInfoOnRequestError(),
@@ -129,13 +116,22 @@ public class ClientMainThread extends Thread {
                         continue;
                 }
 
+                List<Object> pingRight = new ArrayList<>();
 
-                minecraftThread = new MinecraftConnectionThread(server, socket, logger, sessionName.getContent(), heartbeatInterval.getValue(), address.getContent(), cdl);
+                minecraftThread = new MinecraftConnectionThread(server,
+                        socket,
+                        logger,
+                        sessionName.getContent(),
+                        heartbeatInterval.getValue(),
+                        address.getContent(),
+                        cdl,
+                        pingRight
+                );
                 minecraftThread.start();
 
                 cdl.await();
 
-                if (isRunning) {
+                if (isRunning && pingRight.size() == 1) {
                     logger.warning("连接已断开，" + retryTimes + "秒后再次尝试");
                     MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
                             ConfigOperation.getInfoOnConnectionDisconnect(),
@@ -150,11 +146,11 @@ public class ClientMainThread extends Thread {
                             FormatPlaceholder.REMOTE_ADDRESS,
                             minecraftThread.getRemoteAddress()
                     ));
+                }
 
-                    for (int i = 0; i < retryTimes && isRunning; i++) {
-//                        防止等待过长
-                        Thread.sleep(1000L);
-                    }
+                for (int i = 0; i < retryTimes && isRunning; i++) {
+//                        isRunning防止卸载插件时等待过长
+                    Thread.sleep(1000L);
                 }
 
             } catch (Exception e) {

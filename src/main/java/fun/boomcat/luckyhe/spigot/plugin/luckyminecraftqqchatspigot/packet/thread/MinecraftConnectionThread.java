@@ -14,7 +14,9 @@ import org.bukkit.Server;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -49,6 +51,8 @@ public class MinecraftConnectionThread extends Thread {
     //    当 不取队列的线程 运行完成时减一
     private final CountDownLatch noTakeQueueThreadCdl = new CountDownLatch(2);
     private final CountDownLatch mainThreadCdl;
+
+    private final List<Object> pingRight;
 
     private void logInfo(String threadName, String info) {
         logger.info("[" + threadName + "] " + info);
@@ -162,6 +166,7 @@ public class MinecraftConnectionThread extends Thread {
             String threadName = "接收处理";
             logInfo(threadName, "线程启动");
 
+            boolean isFirstTime = true;
             while (isConnected) {
                 try {
                     Packet packet = receiveQueue.take();
@@ -172,8 +177,30 @@ public class MinecraftConnectionThread extends Thread {
                         case 0x20:
 //                                回应心跳包
                             VarLong ping = new VarLong(packet.getData());
+                            if (ping.getValue() == 1 && isFirstTime) {
+                                logger.info("连接成功，收到返回会话名：" + sessionName + "，对方收到连接地址：" + remoteAddress + "，心跳包间隔：" + heartbeatInterval + "秒");
+
+                                MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
+                                        ConfigOperation.getInfoOnConnected(),
+                                        FormatPlaceholder.SERVER_NAME,
+                                        ConfigOperation.getServerName(),
+                                        FormatPlaceholder.SESSION_ID,
+                                        String.valueOf(ConfigOperation.getBotSessionId()),
+                                        FormatPlaceholder.SESSION_NAME,
+                                        sessionName,
+                                        FormatPlaceholder.PING_INTERVAL,
+                                        String.valueOf(heartbeatInterval),
+                                        FormatPlaceholder.REMOTE_ADDRESS,
+                                        remoteAddress
+                                ));
+                                isFirstTime = false;
+                                pingRight.add(new Object());
+                                continue;
+                            }
+
                             sendQueue.add(ConnectionPacketSendUtil.getPongPacket(ping.getValue() + heartbeatInterval));
                             heartbeatCount = 0;
+
                             break;
 
                         case 0x21:
@@ -448,7 +475,16 @@ public class MinecraftConnectionThread extends Thread {
         mainThreadCdl.countDown();
     }
 
-    public MinecraftConnectionThread(Server server, Socket socket, Logger logger, String sessionName, int heartbeatInterval, String remoteAddress, CountDownLatch mainThreadCdl) throws IOException {
+    public MinecraftConnectionThread(
+            Server server,
+            Socket socket,
+            Logger logger,
+            String sessionName,
+            int heartbeatInterval,
+            String remoteAddress,
+            CountDownLatch mainThreadCdl,
+            List<Object> pingRight
+    ) throws IOException {
         this.server = server;
         this.socket = socket;
         this.logger = logger;
@@ -456,6 +492,7 @@ public class MinecraftConnectionThread extends Thread {
         this.heartbeatInterval = heartbeatInterval;
         this.remoteAddress = remoteAddress;
         this.mainThreadCdl = mainThreadCdl;
+        this.pingRight = pingRight;
 
         this.inputStream = new BufferedInputStream(socket.getInputStream());
         this.outputStream = new BufferedOutputStream(socket.getOutputStream());
