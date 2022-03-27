@@ -116,9 +116,10 @@ format:
   # %senderId%    发送者qq
   # %senderNickname%    发送者昵称
   # %senderGroupNickname%    发送者的群昵称（若无，则此占位符会被自动填充发送者昵称）
+  # %mcId%    依照绑定列表显示mc的id，若无，则填充发送者群昵称
   # %message%    消息内容
   # fromBot: "[%groupNickname%] <%senderGroupNickname%> %message%"
-  fromBot: "[%groupNickname%] <%senderGroupNickname%> %message%"
+  fromBot: "[%groupNickname%] <%mcId%> %message%"
   ######################################################################
 
   ######################################################################

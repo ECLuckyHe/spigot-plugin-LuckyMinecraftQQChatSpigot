@@ -1,5 +1,6 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util;
 
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.QqOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarInt;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarIntString;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datatype.VarLong;
@@ -54,6 +55,9 @@ public class ConnectionPacketReceiveUtil {
             throw new PacketLengthNotMatchException();
         }
 
+//        获取绑定id
+        String mcIdByQq = QqOperation.getMcIdByQq(senderId.getValue());
+
         MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
                 formatString,
                 FormatPlaceholder.GROUP_ID,
@@ -71,7 +75,9 @@ public class ConnectionPacketReceiveUtil {
                 FormatPlaceholder.MESSAGE,
                 message.getContent(),
                 FormatPlaceholder.SESSION_NAME,
-                sessionName
-        ));
+                sessionName,
+                FormatPlaceholder.MC_ID,
+                mcIdByQq != null ? mcIdByQq : senderGroupNickname.getContent()
+                ));
     }
 }

@@ -18,6 +18,8 @@ public class FormatPlaceholder {
 
     public static String WAIT_TIME = "%waitTime%";
 
+    public static String MC_ID = "%mcId%";
+
     public static String ERROR_MESSAGE = "%errorMessage%";
 
     public static String REASON = "%reason%";
