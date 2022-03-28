@@ -92,12 +92,19 @@ public class ConnectionPacketReceiveUtil {
                     textComponents.add(0, new TextComponent(ConfigOperation.getFormatFromBotMsgAtAll()));
                     break;
                 }
-                case 0x03: {
+                case 0x03:
+                case 0x05: {
 //                    图片地址
                     VarIntString url = new VarIntString(Arrays.copyOfRange(data, index, data.length));
                     index += url.getBytesLength();
 
-                    TextComponent textComponent = new TextComponent(ConfigOperation.getFormatFromBotMsgPic());
+                    TextComponent textComponent = new TextComponent();
+                    if (id == 0x03) {
+                        textComponent.setText(ConfigOperation.getFormatFromBotMsgPic());
+                    }
+                    if (id == 0x05) {
+                        textComponent.setText(ConfigOperation.getFormatFromBotMsgAnimeFace());
+                    }
                     textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url.getContent()));
                     textComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{
                             new TextComponent("点击查看")

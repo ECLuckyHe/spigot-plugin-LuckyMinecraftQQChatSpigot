@@ -55,6 +55,10 @@ public class ConfigOperation {
         return config.getString("format.fromBotMsg.quoteReply.hover");
     }
 
+    public static String getFormatFromBotMsgAnimeFace() {
+        return config.getString("format.fromBotMsg.animeFace");
+    }
+
     public static String getFormatJoin() {
         return config.getString("format.join");
     }
