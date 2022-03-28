@@ -10,6 +10,8 @@ public class FormatPlaceholder {
     public static String SENDER_GROUP_NICKNAME = "%senderGroupNickname%";
     public static String MESSAGE = "%message%";
     public static String SESSION_NAME = "%sessionName%";
+    public static String FROM_ID = "%fromId%";
+    public static String OLD_MESSAGE = "%oldMessage%";
 
 //    mc
     public static String SESSION_ID = "%sessionId%";
