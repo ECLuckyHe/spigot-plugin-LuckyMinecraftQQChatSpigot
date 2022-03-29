@@ -20,6 +20,10 @@ public class MinecraftMessageUtil {
         server.broadcastMessage(message);
     }
 
+    public static void logInfo(String info) {
+        logger.info(info);
+    }
+
     public static Collection<? extends Player> getOnlinePlayerList() {
         return server.getOnlinePlayers();
     }

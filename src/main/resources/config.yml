@@ -107,6 +107,8 @@ serverName: "MinecraftServer"
 # 各项注释请不要删除，方便随时查阅
 format:
   ######################################################################
+  # 此框内的内容与群消息发送到mc中的消息格式有关
+  #
   # 该条消息格式是来自于QQ群消息的消息格式，将被发送到MC游戏中
   # 以下为所有占位符，在实际运行过程中这些占位符会被实际数据替代：
   # %sessionName%    会话备注（由bot端决定）
@@ -116,9 +118,34 @@ format:
   # %senderId%    发送者qq
   # %senderNickname%    发送者昵称
   # %senderGroupNickname%    发送者的群昵称（若无，则此占位符会被自动填充发送者昵称）
+  # %mcId%    依照绑定列表显示mc的id，若无，则填充发送者群昵称
   # %message%    消息内容
   # fromBot: "[%groupNickname%] <%senderGroupNickname%> %message%"
-  fromBot: "[%groupNickname%] <%senderGroupNickname%> %message%"
+  fromBot: "[%groupNickname%] <%mcId%> %message%"
+
+  # 该条目定义的是群消息中出现某些特殊操作（如@等）时的显示内容或操作
+  fromBotMsg:
+    # 当群内有人@某玩家，且该玩家在线并已绑定qq，则在发送给该玩家的消息内容前追加以下内容
+    at: "§6[@我]§r "
+    #
+    # 当群内有人发送图片，则在发送到mc的消息中该图片的显示内容（该位置可以点击打开图片地址）
+    pic: "§b[图片]§r"
+    #
+    # 当群内有人发送图片，则在发送到mc的消息中该图片的显示内容（该位置可以点击打开图片地址）
+    animeFace: "§b[动画表情]§r"
+    #
+    # 当群内有人发送@全体成员时在消息最开头追加以下内容
+    atAll: "§6[@全体成员]§r "
+    #
+    # 与回复消息有关
+    quoteReply:
+      # 当群内有人回复旧消息时，在发送到mc的消息开头追加以下内容
+      display: "§b[回复消息]§r "
+      #
+      # 当玩家将光标置于上述display属性内容上时，显示以下内容
+      # %fromId%    被回复者的QQ号
+      # %oldMessage%    被回复的消息内容
+      hover: "§a@%fromId%§r\n%oldMessage%"
   ######################################################################
 
   ######################################################################
@@ -205,13 +232,13 @@ rconCommand:
 
   # op指令格式前缀
   # 当op在群内发送的消息中包含以下前缀时，前缀后面的内容为指令内容
-  # prefix: "[%serverName%]#"
-  prefix: "[%serverName%]#"
+  # prefix: "%serverName%#"
+  prefix: "%serverName%#"
 
   # 用户指令格式前缀
   # 当用户在群内发送的消息中包含以下前缀时，前缀后面的内容为用户指令内容
-  # userPrefix: "[%serverName%]/"
-  userPrefix: "[%serverName%]/"
+  # userPrefix: "%serverName%/"
+  userPrefix: "%serverName%/"
 
   # 普通用户查看所有用户指令的指令
   # 当用户在群内发送的消息与以下的其中一项相同时，返回所有可用的用户指令
@@ -219,11 +246,12 @@ rconCommand:
     - "command"
     - "指令"
     - "用户指令"
+    - "/"
 
   # 绑定用户mcid与qq的指令前缀
   # 当用户在群内发送的消息中包含以下前缀时，前缀后面的内容为绑定的mc中的id
-  # userBindPrefix: "[%serverName%]^"
-  userBindPrefix: "[%serverName%]^"
+  # userBindPrefix: "%serverName%^"
+  userBindPrefix: "%serverName%^"
 
   # 指令执行结果格式
   # 该内容将被发送到群里
