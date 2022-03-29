@@ -319,12 +319,13 @@ public class ConnectionPacketSendUtil {
         }
 
 //        存在指令，则执行
+        String realCommandWithPlayer = ReplacePlaceholderUtil.replacePlaceholderWithString(
+                realCommand,
+                FormatPlaceholder.PLAYER_NAME,
+                mcid
+        );
         try {
-            commandResult = new VarIntString(RconUtil.sendMcCommad(ReplacePlaceholderUtil.replacePlaceholderWithString(
-                    realCommand,
-                    FormatPlaceholder.PLAYER_NAME,
-                    mcid
-            )));
+            commandResult = new VarIntString("/" + realCommandWithPlayer + "\n\n" + RconUtil.sendMcCommad(realCommandWithPlayer));
         } catch (Exception e) {
             e.printStackTrace();
             commandResult = new VarIntString("指令执行失败");
@@ -590,7 +591,7 @@ public class ConnectionPacketSendUtil {
         VarInt packetId = new VarInt(0x28);
 
         String mcMessage = MinecraftFontStyleCode.GOLD + "QQ号为" + MinecraftFontStyleCode.GREEN + senderId + MinecraftFontStyleCode.GOLD + "的用户申请与此MCID " + MinecraftFontStyleCode.GREEN + mcid + MinecraftFontStyleCode.GOLD +
-                "绑定，输入/qq confirm " + senderId + " 确认绑定";
+                " 绑定，输入/qq confirm " + senderId + " 确认绑定";
         VarIntString res;
         try {
             MinecraftMessageUtil.sendMessageToPlayer(mcid, mcMessage);
