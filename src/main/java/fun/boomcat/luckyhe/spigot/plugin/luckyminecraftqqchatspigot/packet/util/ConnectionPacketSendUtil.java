@@ -319,12 +319,13 @@ public class ConnectionPacketSendUtil {
         }
 
 //        存在指令，则执行
+        String realCommandWithPlayer = ReplacePlaceholderUtil.replacePlaceholderWithString(
+                realCommand,
+                FormatPlaceholder.PLAYER_NAME,
+                mcid
+        );
         try {
-            commandResult = new VarIntString(RconUtil.sendMcCommad(ReplacePlaceholderUtil.replacePlaceholderWithString(
-                    realCommand,
-                    FormatPlaceholder.PLAYER_NAME,
-                    mcid
-            )));
+            commandResult = new VarIntString("/" + realCommandWithPlayer + "\n\n" + RconUtil.sendMcCommad(realCommandWithPlayer));
         } catch (Exception e) {
             e.printStackTrace();
             commandResult = new VarIntString("指令执行失败");
