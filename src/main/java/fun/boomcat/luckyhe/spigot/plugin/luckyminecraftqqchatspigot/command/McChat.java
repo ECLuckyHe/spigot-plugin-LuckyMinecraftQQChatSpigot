@@ -5,15 +5,15 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.Op
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.exception.OpIdNotExistException;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftFontStyleCode;
 import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.FileNotFoundException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public class McChat implements CommandExecutor {
+public class McChat implements TabExecutor {
     private JavaPlugin plugin;
 
     public McChat(JavaPlugin plugin) {
@@ -125,7 +125,7 @@ public class McChat implements CommandExecutor {
         }
 
         try {
-            DataOperation.removeRconCommnadIds(opId);
+            DataOperation.removeRconCommandIds(opId);
         } catch (OpIdNotExistException e) {
             commandSender.sendMessage(MinecraftFontStyleCode.RED + "管理员QQ " + opId + " 不存在");
             return;
@@ -157,6 +157,15 @@ public class McChat implements CommandExecutor {
         }
 
         commandSender.sendMessage(MinecraftFontStyleCode.GOLD + "已添加op的QQ：" + res);
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender commandSender, Command command, String s, String[] strings) {
+        if (strings.length == 0 || strings.length == 1) {
+            return Arrays.asList("reload", "addop", "delop", "listop");
+        } else {
+            return Collections.emptyList();
+        }
     }
 }
 

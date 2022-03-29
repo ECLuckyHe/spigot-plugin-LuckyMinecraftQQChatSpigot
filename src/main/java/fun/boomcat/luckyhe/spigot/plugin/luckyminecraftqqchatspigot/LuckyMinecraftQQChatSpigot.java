@@ -1,8 +1,10 @@
 package fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot;
 
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.command.McChat;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.command.Qq;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.ConfigOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.DataOperation;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.config.QqOperation;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.listener.PlayerListener;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.thread.ClientMainThread;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.FormatPlaceholder;
@@ -22,6 +24,12 @@ public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        try {
+            QqOperation.initDataPath(getDataFolder(), getResource("qq.yml"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -32,6 +40,7 @@ public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
         MinecraftMessageUtil.init(getServer(), getLogger());
 
         this.getCommand("mcchat").setExecutor(new McChat(this));
+        this.getCommand("qq").setExecutor(new Qq(this));
 
         if (clientMainThread == null) {
             clientMainThread = new ClientMainThread(getServer(), getLogger());
