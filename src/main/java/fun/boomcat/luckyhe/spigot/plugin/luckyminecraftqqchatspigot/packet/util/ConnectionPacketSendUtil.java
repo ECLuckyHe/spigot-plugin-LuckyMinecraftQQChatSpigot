@@ -399,10 +399,31 @@ public class ConnectionPacketSendUtil {
             userCommandStrings.removeIf(o -> o.equals(mapCommandString));
         }
 
-//        有未使用的参数
+//        用户指令有未使用的参数
         if (userCommandStrings.size() != 0) {
             StringBuilder sb = new StringBuilder("创建用户指令失败，以下参数未使用：\n");
             for (String s : userCommandStrings) {
+                sb.append(s).append("\n");
+            }
+            VarIntString res = new VarIntString(sb.toString());
+            return new Packet(
+                    new VarInt(packetId.getBytesLength() + res.getBytesLength()),
+                    packetId,
+                    res.getBytes()
+            );
+        }
+
+//        实际指令中有用户指令没指定的参数
+        userCommandStrings = UserCommandUtil.getCommandArgList(userCommand);
+        mapCommandStrings = UserCommandUtil.getCommandArgList(mapCommand);
+
+        for (String userCommandString : userCommandStrings) {
+            mapCommandStrings.removeIf(o -> o.equals(userCommandString));
+        }
+
+        if (mapCommandStrings.size() != 0) {
+            StringBuilder sb = new StringBuilder("创建用户指令失败，以下参数未指定：\n");
+            for (String s : mapCommandStrings) {
                 sb.append(s).append("\n");
             }
             VarIntString res = new VarIntString(sb.toString());

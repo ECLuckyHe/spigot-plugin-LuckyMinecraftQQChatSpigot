@@ -200,6 +200,7 @@ public class DataOperation {
 //                    都是常量
                     if (!existPart.equals(newPart)) {
                         isConstantEqual = false;
+                        break;
                     }
                 }
             }
