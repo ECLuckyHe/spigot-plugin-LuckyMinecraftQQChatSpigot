@@ -8,12 +8,16 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.datat
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.pojo.Packet;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketReceiveUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.util.ConnectionPacketSendUtil;
-import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.*;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.AsyncCaller;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.FormatPlaceholder;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
+import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.ReplacePlaceholderUtil;
 import org.bukkit.Server;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
@@ -47,6 +51,8 @@ public class MinecraftConnectionThread extends Thread {
     //    当 不取队列的线程 运行完成时减一
     private final CountDownLatch noTakeQueueThreadCdl = new CountDownLatch(2);
     private final CountDownLatch mainThreadCdl;
+
+    private final List<Object> pingRight;
 
     private void logInfo(String threadName, String info) {
         logger.info("[" + threadName + "] " + info);
@@ -160,23 +166,49 @@ public class MinecraftConnectionThread extends Thread {
             String threadName = "接收处理";
             logInfo(threadName, "线程启动");
 
+            boolean isFirstTime = true;
             while (isConnected) {
                 try {
                     Packet packet = receiveQueue.take();
                     switch (packet.getId().getValue()) {
                         case -1:
                             continue;
+
                         case 0x20:
 //                                回应心跳包
                             VarLong ping = new VarLong(packet.getData());
-                            sendQueue.add(ConnectionPacketSendUtil.getPongPacket(ping.getValue()));
+                            if (ping.getValue() == 1 && isFirstTime) {
+                                logger.info("连接成功，收到返回会话名：" + sessionName + "，对方收到连接地址：" + remoteAddress + "，心跳包间隔：" + heartbeatInterval + "秒");
+
+                                MinecraftMessageUtil.sendMinecraftMessage(ReplacePlaceholderUtil.replacePlaceholderWithString(
+                                        ConfigOperation.getInfoOnConnected(),
+                                        FormatPlaceholder.SERVER_NAME,
+                                        ConfigOperation.getServerName(),
+                                        FormatPlaceholder.SESSION_ID,
+                                        String.valueOf(ConfigOperation.getBotSessionId()),
+                                        FormatPlaceholder.SESSION_NAME,
+                                        sessionName,
+                                        FormatPlaceholder.PING_INTERVAL,
+                                        String.valueOf(heartbeatInterval),
+                                        FormatPlaceholder.REMOTE_ADDRESS,
+                                        remoteAddress
+                                ));
+                                isFirstTime = false;
+                                pingRight.add(new Object());
+                                continue;
+                            }
+
+                            sendQueue.add(ConnectionPacketSendUtil.getPongPacket(ping.getValue() + heartbeatInterval));
                             heartbeatCount = 0;
+
                             break;
+
                         case 0x21:
 //                                收到要求提供玩家在线信息数据的数据包
                             sendQueue.add(ConnectionPacketSendUtil.getOnlinePlayersPacket());
                             break;
-                        case 0x22:
+
+                        case 0x22: {
 //                                指令
                             int commandIndex = 0;
                             VarLong commandSenderId = new VarLong(packet.getData());
@@ -194,14 +226,16 @@ public class MinecraftConnectionThread extends Thread {
                                     command.getContent()
                             ));
                             break;
-                        case 0x23:
+                        }
+
+                        case 0x23: {
 //                                公告
-                            int announcementIndex = 0;
+                            int i = 0;
                             VarLong announcementSenderId = new VarLong(packet.getData());
-                            announcementIndex += announcementSenderId.getBytesLength();
-                            VarIntString announcementSenderNickname = new VarIntString(Arrays.copyOfRange(packet.getData(), announcementIndex, packet.getData().length));
-                            announcementIndex += announcementSenderNickname.getBytesLength();
-                            VarIntString announcement = new VarIntString(Arrays.copyOfRange(packet.getData(), announcementIndex, packet.getData().length));
+                            i += announcementSenderId.getBytesLength();
+                            VarIntString announcementSenderNickname = new VarIntString(Arrays.copyOfRange(packet.getData(), i, packet.getData().length));
+                            i += announcementSenderNickname.getBytesLength();
+                            VarIntString announcement = new VarIntString(Arrays.copyOfRange(packet.getData(), i, packet.getData().length));
 
                             String announcementToBeSent = ReplacePlaceholderUtil.replacePlaceholderWithString(
                                     ConfigOperation.getAnnouncementFormat(),
@@ -217,7 +251,86 @@ public class MinecraftConnectionThread extends Thread {
 
                             MinecraftMessageUtil.sendMinecraftMessage(announcementToBeSent);
                             break;
-                        case 0xF0:
+                        }
+
+                        case 0x24: {
+//                            发送用户指令
+                            byte[] data = packet.getData();
+                            int i = 0;
+                            VarLong qq = new VarLong(Arrays.copyOfRange(data, i, data.length));
+                            i += qq.getBytesLength();
+                            VarIntString content = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+
+                            addSendQueue(ConnectionPacketSendUtil.getUserCommandResultPacket(
+                                    rconEnable,
+                                    qq.getValue(),
+                                    content.getContent()
+                            ));
+
+                            break;
+                        }
+
+                        case 0x25: {
+//                            添加用户指令
+                            int i = 0;
+                            byte[] data = packet.getData();
+                            VarLong senderId = new VarLong(Arrays.copyOfRange(data, i, data.length));
+                            i += senderId.getBytesLength();
+                            VarIntString name = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+                            i += name.getBytesLength();
+                            VarIntString userCommand = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+                            i += userCommand.getBytesLength();
+                            VarIntString mapCommand = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+
+                            sendQueue.add(ConnectionPacketSendUtil.getAddUserCommandResultPacket(
+                                    senderId.getValue(),
+                                    name.getContent(),
+                                    userCommand.getContent(),
+                                    mapCommand.getContent()
+                            ));
+                            break;
+                        }
+
+                        case 0x26: {
+//                            删除用户指令
+                            int i = 0;
+                            byte[] data = packet.getData();
+                            VarLong senderId = new VarLong(Arrays.copyOfRange(data, i, data.length));
+                            i += senderId.getBytesLength();
+                            VarIntString commandName = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+
+                            sendQueue.add(ConnectionPacketSendUtil.getDelUserCommandResultPacket(
+                                    senderId.getValue(),
+                                    commandName.getContent()
+                            ));
+                            break;
+                        }
+
+                        case 0x27: {
+//                            获取用户指令列表（mcchat指令）
+                            sendQueue.add(ConnectionPacketSendUtil.getMcChatUserCommandResultPacket(0x27));
+                            break;
+                        }
+
+                        case 0x29: {
+//                            获取用户指令列表（普通用户）
+                            sendQueue.add(ConnectionPacketSendUtil.getMcChatUserCommandResultPacket(0x29));
+                            break;
+                        }
+
+                        case 0x28: {
+//                            绑定mcid和qq返回
+                            int i = 0;
+                            byte[] data = packet.getData();
+                            VarLong qq = new VarLong(Arrays.copyOfRange(data, i, data.length));
+                            i += qq.getBytesLength();
+                            VarIntString mcid = new VarIntString(Arrays.copyOfRange(data, i, data.length));
+
+                            sendQueue.add(ConnectionPacketSendUtil.getUserBindResultPacket(qq.getValue(), mcid.getContent()));
+                            break;
+                        }
+
+                        case 0xF0: {
 //                                关闭包
                             VarIntString exitMsg = new VarIntString(packet.getData());
                             logInfo(threadName, "对方要求断开连接，原因：" + exitMsg.getContent());
@@ -241,15 +354,21 @@ public class MinecraftConnectionThread extends Thread {
                             isConnected = false;
                             socket.close();
                             break;
-                        case 0x11:
+                        }
+
+                        case 0x11: {
 //                                原封不动发送到服内的消息包
                             VarIntString msg = new VarIntString(packet.getData());
                             MinecraftMessageUtil.sendMinecraftMessage(msg.getContent());
                             break;
-                        case 0x10:
+                        }
+
+                        case 0x10: {
 //                                来自群内的消息
                             ConnectionPacketReceiveUtil.handleMessageFromBot(formatFromBot, packet, sessionName);
                             break;
+                        }
+
                     }
 
                 } catch (Exception e) {
@@ -356,7 +475,16 @@ public class MinecraftConnectionThread extends Thread {
         mainThreadCdl.countDown();
     }
 
-    public MinecraftConnectionThread(Server server, Socket socket, Logger logger, String sessionName, int heartbeatInterval, String remoteAddress, CountDownLatch mainThreadCdl) throws IOException {
+    public MinecraftConnectionThread(
+            Server server,
+            Socket socket,
+            Logger logger,
+            String sessionName,
+            int heartbeatInterval,
+            String remoteAddress,
+            CountDownLatch mainThreadCdl,
+            List<Object> pingRight
+    ) throws IOException {
         this.server = server;
         this.socket = socket;
         this.logger = logger;
@@ -364,6 +492,7 @@ public class MinecraftConnectionThread extends Thread {
         this.heartbeatInterval = heartbeatInterval;
         this.remoteAddress = remoteAddress;
         this.mainThreadCdl = mainThreadCdl;
+        this.pingRight = pingRight;
 
         this.inputStream = new BufferedInputStream(socket.getInputStream());
         this.outputStream = new BufferedOutputStream(socket.getOutputStream());

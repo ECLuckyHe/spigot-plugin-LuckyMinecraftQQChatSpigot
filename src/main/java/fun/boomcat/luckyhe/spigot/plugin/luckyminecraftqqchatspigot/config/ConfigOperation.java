@@ -35,6 +35,30 @@ public class ConfigOperation {
         return config.getString("format.fromBot");
     }
 
+    public static String getFormatFromBotMsgAt() {
+        return config.getString("format.fromBotMsg.at");
+    }
+
+    public static String getFormatFromBotMsgPic() {
+        return config.getString("format.fromBotMsg.pic");
+    }
+
+    public static String getFormatFromBotMsgAtAll() {
+        return config.getString("format.fromBotMsg.atAll");
+    }
+
+    public static String getFormatFromBotMsgQuoteReplyDisplay() {
+        return config.getString("format.fromBotMsg.quoteReply.display");
+    }
+
+    public static String getFormatFromBotMsgQuoteReplyHover() {
+        return config.getString("format.fromBotMsg.quoteReply.hover");
+    }
+
+    public static String getFormatFromBotMsgAnimeFace() {
+        return config.getString("format.fromBotMsg.animeFace");
+    }
+
     public static String getFormatJoin() {
         return config.getString("format.join");
     }
@@ -97,6 +121,18 @@ public class ConfigOperation {
 
     public static String getRconCommandPrefix() {
         return config.getString("rconCommand.prefix");
+    }
+
+    public static String getRconCommandUserPrefix() {
+        return config.getString("rconCommand.userPrefix");
+    }
+
+    public static String getRconCommandUserBindPrefix() {
+        return config.getString("rconCommand.userBindPrefix");
+    }
+
+    public static List<String> getRconCommandGetUserCommand() {
+        return config.getStringList("rconCommand.getUserCommand");
     }
 
     public static boolean getRconCommandEnabled() {
