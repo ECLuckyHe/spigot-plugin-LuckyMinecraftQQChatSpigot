@@ -1,5 +1,5 @@
 name: LuckyMinecraftQQChatSpigot
-version: 1.1.1
+version: 1.2
 main: fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.LuckyMinecraftQQChatSpigot
 commands:
   mcchat:
