@@ -274,6 +274,23 @@ rconCommand:
 # announcementFormat: "§d---------------公告---------------\n§6%announcement%\n发布者：%senderNickname%（QQ %senderId%）"
 announcementFormat: "§d---------------公告---------------\n§6%announcement%\n发布者：%senderNickname%（QQ %senderId%）"
 
+# 白名单相关
+# 在使用离线模式（online-mode=false）时，白名单内的玩家有一定概率无法进入游戏
+# 原因是进入游戏的玩家id和白名单中存储的id一致，但是uuid不一致
+# 当该功能开启后，当在白名单的新用户进来后，若发现uuid不一致，则将白名单文件中的uuid改为新用户的uuid
+# 随后玩家第二次即可成功进入游戏
+# 注：该功能在白名单禁用时忽略
+whitelistCorrect:
+  # 是否开启该功能
+  # enabled: false
+  enabled: false
+
+  # 出现uuid不匹配时并修改完成后向群内发送的提醒消息
+  # %playerName%    玩家名
+  # message:
+  message: "[%serverName%] 玩家 %playerName% 的UUID与白名单不一致，已修改完成，请重新进入游戏"
+
+
 #####################以下内容为非必要修改选项#####################
 
 # 插件的提示消息（如意外断开连接，通知提醒等）

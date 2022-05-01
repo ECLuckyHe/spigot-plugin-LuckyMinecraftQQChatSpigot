@@ -154,4 +154,12 @@ public class ConfigOperation {
     public static String getAnnouncementFormat() {
         return config.getString("announcementFormat");
     }
+
+    public static String getWhitelistCorrectEnabled() {
+        return config.getString("whitelistCorrect.enabled");
+    }
+
+    public static String getWhitelistCorrectMessage() {
+        return config.getString("whitelistCorrect.message");
+    }
 }
