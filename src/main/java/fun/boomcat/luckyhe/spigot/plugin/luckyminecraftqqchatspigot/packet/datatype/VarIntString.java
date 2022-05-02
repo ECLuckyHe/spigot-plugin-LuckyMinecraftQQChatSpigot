@@ -35,6 +35,12 @@ public class VarIntString {
         VarInt len = new VarInt(inputStream);
         byte[] bytes = new byte[len.getValue()];
         int readLen = inputStream.read(bytes);
+        if (readLen == -1) {
+//            20220502添加
+//            此处若VarIntString类型变量在包最后一项且len刚好为0时，无下一个字节
+//            因此此处会返回-1
+            readLen = 0;
+        }
         if (readLen != len.getValue()) {
             throw new VarIntStringLengthNotMatchException();
         }
