@@ -9,16 +9,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class VarIntString {
     private String content;
     private Charset charset;
+    private byte[] bytes;
+    private int len = -1;
 
     @Override
     public String toString() {
         return "VarIntString{" +
                 "content='" + content + '\'' +
                 ", charset=" + charset +
+                ", bytes=" + Arrays.toString(bytes) +
+                ", len=" + len +
                 '}';
     }
 
@@ -69,7 +74,10 @@ public class VarIntString {
     }
 
     public int getBytesLength(Charset charset) {
-        return getBytes(charset).length;
+        if (len == -1) {
+            len = getBytes(charset).length;
+        }
+        return len;
     }
 
     public int getBytesLength() {
@@ -77,9 +85,13 @@ public class VarIntString {
     }
 
     public byte[] getBytes(Charset charset) {
+        if (this.bytes != null) {
+            return this.bytes;
+        }
         byte[] bytes = content.getBytes(charset);
         byte[] lengthBytes = (new VarInt(bytes.length)).getBytes();
-        return ByteUtil.byteMergeAll(lengthBytes, bytes);
+        this.bytes =  ByteUtil.byteMergeAll(lengthBytes, bytes);
+        return this.bytes;
     }
 
     public byte[] getBytes() {
