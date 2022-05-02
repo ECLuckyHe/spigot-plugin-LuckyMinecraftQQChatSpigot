@@ -39,7 +39,8 @@ public class ConnectionPacketSendUtil {
             String userCommandPrefix,
             String userBindPrefix,
             List<String> getUserCommandsCommands,
-            String whitelistCorrectMessage
+            String whitelistCorrectMessage,
+            String whitelistTryMessage
     ) {
         VarInt packetId = new VarInt(0x00);
 
@@ -68,6 +69,7 @@ public class ConnectionPacketSendUtil {
         VarInt guccc = new VarInt(getUserCommandsCommands.size());
         VarIntString[] guccs = new VarIntString[guccc.getValue()];
         VarIntString wcm = new VarIntString(whitelistCorrectMessage);
+        VarIntString wtm = new VarIntString(whitelistTryMessage);
 
         for (int i = 0; i < guccs.length; i++) {
             guccs[i] = new VarIntString(getUserCommandsCommands.get(i));
@@ -77,7 +79,7 @@ public class ConnectionPacketSendUtil {
                 jfs.getBytesLength() + qfs.getBytesLength() + mfs.getBytesLength() + dfs.getBytesLength() +
                 kfs.getBytesLength() + opcc.getBytesLength() + opcrf.getBytesLength() + opcrs.getBytesLength() +
                 rcp.getBytesLength() + rcrf.getBytesLength() + ucp.getBytesLength() + ubp.getBytesLength() +
-                guccc.getBytesLength() + wcm.getBytesLength();
+                guccc.getBytesLength() + wcm.getBytesLength() + wtm.getBytesLength();
         for (VarIntString opcca : opccs) {
             totalLengthInt += opcca.getBytesLength();
         }
@@ -114,7 +116,7 @@ public class ConnectionPacketSendUtil {
             data = ByteUtil.byteMergeAll(data, gucc.getBytes());
         }
 
-        data = ByteUtil.byteMergeAll(data, wcm.getBytes());
+        data = ByteUtil.byteMergeAll(data, wcm.getBytes(), wtm.getBytes());
 
         return new Packet(
                 new VarInt(totalLengthInt),

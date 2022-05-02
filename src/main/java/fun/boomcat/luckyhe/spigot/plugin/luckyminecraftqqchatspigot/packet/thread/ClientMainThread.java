@@ -80,7 +80,8 @@ public class ClientMainThread extends Thread {
                         ConfigOperation.getRconCommandUserPrefix(),
                         ConfigOperation.getRconCommandUserBindPrefix(),
                         ConfigOperation.getRconCommandGetUserCommand(),
-                        ConfigOperation.getWhitelistCorrectMessage()
+                        ConfigOperation.getWhitelistCorrectMessage(),
+                        ConfigOperation.getWhitelistTryMessage()
                 ).getBytes());
 
 //                睡眠一秒，确保对方已收到

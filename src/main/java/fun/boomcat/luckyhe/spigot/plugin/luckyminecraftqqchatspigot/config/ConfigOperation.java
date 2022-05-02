@@ -155,11 +155,15 @@ public class ConfigOperation {
         return config.getString("announcementFormat");
     }
 
-    public static String getWhitelistCorrectEnabled() {
-        return config.getString("whitelistCorrect.enabled");
+    public static String getWhitelistEnabled() {
+        return config.getString("whitelist.enabled");
     }
 
     public static String getWhitelistCorrectMessage() {
-        return config.getString("whitelistCorrect.message");
+        return config.getString("whitelist.correctMessage");
+    }
+
+    public static String getWhitelistTryMessage() {
+        return config.getString("whitelist.tryMessage");
     }
 }
