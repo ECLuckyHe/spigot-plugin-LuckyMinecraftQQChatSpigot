@@ -15,15 +15,15 @@ public class ConfigOperation {
         return config.getString("bot.host");
     }
 
-    public static int getBotPort() {
+    public static Integer getBotPort() {
         return config.getInt("bot.port");
     }
 
-    public static long getBotSessionId() {
+    public static Long getBotSessionId() {
         return config.getLong("bot.sessionId");
     }
 
-    public static int getBotRetryTimes() {
+    public static Integer getBotRetryTimes() {
         return config.getInt("bot.retryTimes");
     }
 
@@ -135,11 +135,11 @@ public class ConfigOperation {
         return config.getStringList("rconCommand.getUserCommand");
     }
 
-    public static boolean getRconCommandEnabled() {
+    public static Boolean getRconCommandEnabled() {
         return  config.getBoolean("rconCommand.enabled");
     }
 
-    public static int getRconCommandPort() {
+    public static Integer getRconCommandPort() {
         return config.getInt("rconCommand.port");
     }
 
@@ -153,5 +153,17 @@ public class ConfigOperation {
 
     public static String getAnnouncementFormat() {
         return config.getString("announcementFormat");
+    }
+
+    public static Boolean getWhitelistEnabled() {
+        return config.getBoolean("whitelist.enabled");
+    }
+
+    public static String getWhitelistCorrectMessage() {
+        return config.getString("whitelist.correctMessage");
+    }
+
+    public static String getWhitelistTryMessage() {
+        return config.getString("whitelist.tryMessage");
     }
 }
