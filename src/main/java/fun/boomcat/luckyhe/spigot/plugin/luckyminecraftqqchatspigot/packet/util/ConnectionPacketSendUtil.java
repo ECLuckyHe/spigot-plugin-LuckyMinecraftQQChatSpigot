@@ -637,4 +637,27 @@ public class ConnectionPacketSendUtil {
                 res.getBytes()
         );
     }
+
+    public static Packet getWhitelistTryMessage(String playerName) {
+//        开启白名单后发送未在白名单内的玩家的登录信息
+        VarInt packetId = new VarInt(0x30);
+        VarIntString playerNameString = new VarIntString(playerName);
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + playerNameString.getBytesLength()),
+                packetId,
+                playerNameString.getBytes()
+        );
+    }
+
+    public static Packet getWhitelistCorrectMessage(String playerName) {
+//        开启白名单后对白名单内uuid不一致的用户修改成功之后发送的消息
+        VarInt packetId = new VarInt(0x31);
+        VarIntString playerNameString = new VarIntString(playerName);
+        return new Packet(
+                new VarInt(packetId.getBytesLength() + playerNameString.getBytesLength()),
+                packetId,
+                playerNameString.getBytes()
+        );
+    }
 }
+
