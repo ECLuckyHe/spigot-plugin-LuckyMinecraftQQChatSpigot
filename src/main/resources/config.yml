@@ -292,7 +292,7 @@ whitelist:
 
   # 不在白名单内的玩家进入游戏后向群内发送的提醒消息
   # %playerName%    玩家名
-  # tryMessage: "玩家 %playerName% 尝试进入游戏"
+  # tryMessage: "[%serverName%] 玩家 %playerName% 尝试进入游戏"
   tryMessage: "[%serverName%] 玩家 %playerName% 尝试进入游戏"
 
 #####################以下内容为非必要修改选项#####################
