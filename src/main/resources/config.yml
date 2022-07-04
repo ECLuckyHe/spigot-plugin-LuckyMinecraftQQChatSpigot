@@ -130,7 +130,7 @@ format:
     # %targetId%    发送者qq
     # %targetDisplayName%    @显示的名片，以bot自身显示的为准，名片开头自带@，如 @Lucky_He
     # at: "§b%targetDisplayName%§r"
-    at: "§b%targetDisplayName%§r"
+    at: "§b%targetDisplayName%(%targetId%)§r"
     #
     # 当群内有人@某玩家，且该玩家在线并已绑定qq，则在发送给该玩家的消息内容前追加以下内容
     # atMe: "§6[@我]§r"
