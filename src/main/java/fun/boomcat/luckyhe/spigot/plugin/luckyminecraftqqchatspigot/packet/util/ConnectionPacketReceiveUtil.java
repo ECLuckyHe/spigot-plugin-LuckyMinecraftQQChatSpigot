@@ -80,6 +80,8 @@ public class ConnectionPacketReceiveUtil {
 //                    @
                     VarLong targetId = new VarLong(Arrays.copyOfRange(data, index, data.length));
                     index += targetId.getBytesLength();
+                    VarIntString targetDisplayName = new VarIntString(Arrays.copyOfRange(data, index, data.length));
+                    index += targetDisplayName.getBytesLength();
 
                     textComponents.add(new TextComponent("@" + targetId.getValue()));
                     atList.add(targetId.getValue());
