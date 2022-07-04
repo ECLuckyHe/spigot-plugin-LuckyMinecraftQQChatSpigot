@@ -196,7 +196,7 @@ public class ConnectionPacketReceiveUtil {
             for (int i = 0; i < sp.length; i++) {
                 mainComponent.addExtra(new TextComponent(sp[i]));
                 if (!(i == sp.length - 1)) {
-                    mainComponent.addExtra(new TextComponent(contains ? ConfigOperation.getFormatFromBotMsgAt() : ""));
+                    mainComponent.addExtra(new TextComponent(contains ? ConfigOperation.getFormatFromBotMsgAtMe() : ""));
                     for (TextComponent tc : textComponents) {
                         mainComponent.addExtra(tc);
                     }

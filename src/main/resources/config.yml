@@ -124,10 +124,17 @@ format:
   fromBot: "[%groupNickname%] <%mcId%> %message%"
 
   # 该条目定义的是群消息中出现某些特殊操作（如@等）时的显示内容或操作
+  # 这些操作仅仅操作的是 fromBot 中的 %message% 参数
   fromBotMsg:
+    # 当群内有@消息时，在@位置显示的内容
+    # %senderId%    发送者qq
+    # %senderDisplayName%    @显示的名片，以bot自身显示的为准，名片开头自带@，如 @Lucky_He
+    # at: "§b%senderDisplayName%§r"
+    at: "§b%senderDisplayName%§r"
+    #
     # 当群内有人@某玩家，且该玩家在线并已绑定qq，则在发送给该玩家的消息内容前追加以下内容
-    # at: "§6[@我]§r "
-    at: "§6[@我]§r "
+    # atMe: "§6[@我]§r"
+    atMe: "§6[@我]§r"
     #
     # 当群内有人发送图片，则在发送到mc的消息中该图片的显示内容（该位置可以点击打开图片地址）
     # pic: "§b[图片]§r"
