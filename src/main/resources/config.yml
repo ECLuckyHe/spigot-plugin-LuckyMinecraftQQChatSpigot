@@ -127,10 +127,10 @@ format:
   # 这些操作仅仅操作的是 fromBot 中的 %message% 参数
   fromBotMsg:
     # 当群内有@消息时，在@位置显示的内容
-    # %senderId%    发送者qq
-    # %senderDisplayName%    @显示的名片，以bot自身显示的为准，名片开头自带@，如 @Lucky_He
-    # at: "§b%senderDisplayName%§r"
-    at: "§b%senderDisplayName%§r"
+    # %targetId%    发送者qq
+    # %targetDisplayName%    @显示的名片，以bot自身显示的为准，名片开头自带@，如 @Lucky_He
+    # at: "§b%targetDisplayName%§r"
+    at: "§b%targetDisplayName%§r"
     #
     # 当群内有人@某玩家，且该玩家在线并已绑定qq，则在发送给该玩家的消息内容前追加以下内容
     # atMe: "§6[@我]§r"
