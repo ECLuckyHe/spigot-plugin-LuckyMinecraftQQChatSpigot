@@ -30,6 +30,8 @@ public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        // huanshebeiceshi
     }
 
     @Override
