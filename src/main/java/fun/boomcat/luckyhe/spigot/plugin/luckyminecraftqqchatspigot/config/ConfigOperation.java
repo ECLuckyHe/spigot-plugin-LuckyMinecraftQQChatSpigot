@@ -35,6 +35,10 @@ public class ConfigOperation {
         return config.getString("format.fromBot");
     }
 
+    public static String getFormatFromBotMsgAtMe() {
+        return config.getString("format.fromBotMsg.atMe");
+    }
+
     public static String getFormatFromBotMsgAt() {
         return config.getString("format.fromBotMsg.at");
     }
