@@ -63,6 +63,10 @@ public class ConfigOperation {
         return config.getString("format.fromBotMsg.animeFace");
     }
 
+    public static String getFormatFromBotMsgLightApp() {
+        return config.getString("format.fromBotMsg.lightApp");
+    }
+
     public static String getFormatJoin() {
         return config.getString("format.join");
     }
