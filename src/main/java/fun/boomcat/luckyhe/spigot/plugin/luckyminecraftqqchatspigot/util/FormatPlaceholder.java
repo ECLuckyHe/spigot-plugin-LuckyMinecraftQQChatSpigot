@@ -13,6 +13,10 @@ public class FormatPlaceholder {
     public static String FROM_ID = "%fromId%";
     public static String OLD_MESSAGE = "%oldMessage%";
 
+//    @
+    public static String TARGET_ID = "%targetId%";
+    public static String TARGET_DISPLAY_NAME = "%targetDisplayName%";
+
 //    mc
     public static String SESSION_ID = "%sessionId%";
     public static String PING_INTERVAL = "%pingInterval%";
