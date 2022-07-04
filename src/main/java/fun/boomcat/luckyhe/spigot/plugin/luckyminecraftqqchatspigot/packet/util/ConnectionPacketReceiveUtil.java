@@ -83,7 +83,13 @@ public class ConnectionPacketReceiveUtil {
                     VarIntString targetDisplayName = new VarIntString(Arrays.copyOfRange(data, index, data.length));
                     index += targetDisplayName.getBytesLength();
 
-                    textComponents.add(new TextComponent("@" + targetId.getValue()));
+                    textComponents.add(new TextComponent(ReplacePlaceholderUtil.replacePlaceholderWithString(
+                            ConfigOperation.getFormatFromBotMsgAt(),
+                            FormatPlaceholder.TARGET_ID,
+                            String.valueOf(targetId.getValue()),
+                            FormatPlaceholder.TARGET_DISPLAY_NAME,
+                            targetDisplayName.getContent()
+                    )));
                     atList.add(targetId.getValue());
                     break;
                 }
