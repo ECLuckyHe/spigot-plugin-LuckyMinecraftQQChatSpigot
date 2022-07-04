@@ -19,6 +19,16 @@ public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
     private ClientMainThread clientMainThread;
     @Override
     public void onLoad() {
+
+    }
+
+    @Override
+    public void onEnable() {
+        saveDefaultConfig();
+        reloadConfig();
+        ConfigOperation.initFileConfiguration(getConfig());
+        MinecraftMessageUtil.init(getServer(), getLogger());
+
         try {
             DataOperation.initDataPath(getDataFolder(), getResource("data.yml"));
         } catch (IOException e) {
@@ -30,14 +40,6 @@ public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    @Override
-    public void onEnable() {
-        saveDefaultConfig();
-        reloadConfig();
-        ConfigOperation.initFileConfiguration(getConfig());
-        MinecraftMessageUtil.init(getServer(), getLogger());
 
         this.getCommand("mcchat").setExecutor(new McChat(this));
         this.getCommand("qq").setExecutor(new Qq(this));
