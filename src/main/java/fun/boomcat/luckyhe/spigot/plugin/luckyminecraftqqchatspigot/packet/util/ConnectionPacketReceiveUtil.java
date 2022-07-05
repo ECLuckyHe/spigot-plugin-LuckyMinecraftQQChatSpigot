@@ -58,6 +58,7 @@ public class ConnectionPacketReceiveUtil {
         VarIntString senderGroupNickname = new VarIntString(Arrays.copyOfRange(data, index, data.length));
         index += senderGroupNickname.getBytesLength();
 
+//        获取 SingleMessage 的个数
         VarInt msgLength = new VarInt(Arrays.copyOfRange(data, index, data.length));
         index += msgLength.getBytesLength();
 
@@ -137,6 +138,19 @@ public class ConnectionPacketReceiveUtil {
                             )
                     )}));
                     textComponents.add(0, textComponent);
+                    break;
+                }
+                case 0x06: {
+//                    小程序消息
+                    VarIntString lightAppContent = new VarIntString(Arrays.copyOfRange(data, index, data.length));
+                    index += lightAppContent.getBytesLength();
+
+                    TextComponent textComponent = new TextComponent(ConfigOperation.getFormatFromBotMsgLightApp());
+                    textComponent.setHoverEvent(new HoverEvent(
+                            HoverEvent.Action.SHOW_TEXT,
+                            new BaseComponent[] {new TextComponent(lightAppContent.getContent())}
+                    ));
+                    textComponents.add(textComponent);
                     break;
                 }
             }
