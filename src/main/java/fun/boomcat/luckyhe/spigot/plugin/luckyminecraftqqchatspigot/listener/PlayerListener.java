@@ -37,7 +37,7 @@ public class PlayerListener implements Listener {
         this.clientMainThread = clientMainThread;
     }
 
-    @EventHandler(priority = MONITOR)
+    @EventHandler(priority = MONITOR, ignoreCancelled = true)
     public void onPlayerMessageEvent(AsyncPlayerChatEvent e) {
         if (e.isCancelled() ){//忽略已被标记为取消的聊天事件
                 return;
