@@ -35,7 +35,7 @@ public class PlayerListener implements Listener {
         this.clientMainThread = clientMainThread;
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onPlayerMessageEvent(AsyncPlayerChatEvent e) {
         String formatMessage = ConfigOperation.getFormatMessage();
         if (formatMessage != null && (!formatMessage.equals("")) && clientMainThread.isAlive()) {
