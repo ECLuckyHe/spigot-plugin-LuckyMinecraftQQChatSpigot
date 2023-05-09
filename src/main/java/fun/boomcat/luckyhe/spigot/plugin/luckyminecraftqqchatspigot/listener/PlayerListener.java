@@ -22,8 +22,11 @@ public class PlayerListener implements Listener {
         this.clientMainThread = clientMainThread;
     }
 
-    @EventHandler
+    @EventHandler(priority = MONITOR)
     public void onPlayerMessageEvent(AsyncPlayerChatEvent e) {
+        if (event.isCancelled() ){//忽略已被标记为取消的聊天事件
+                return;
+            }
         String formatMessage = ConfigOperation.getFormatMessage();
         if (formatMessage != null && (!formatMessage.equals("")) && clientMainThread.isAlive()) {
             clientMainThread.addSendQueue(ConnectionPacketSendUtil.getMessagePacket(
