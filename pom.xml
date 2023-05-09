@@ -6,7 +6,7 @@
 
     <groupId>fun.boomcat.luckyhe.spigot.plugin</groupId>
     <artifactId>LuckyMinecraftQQChatSpigot</artifactId>
-    <version>1.2</version>
+    <version>1.2-fix-1</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
