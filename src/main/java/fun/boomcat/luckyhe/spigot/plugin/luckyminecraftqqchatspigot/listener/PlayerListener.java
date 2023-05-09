@@ -13,6 +13,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.logging.Logger;
 
+import static org.bukkit.event.EventPriority.MONITOR;
+
 public class PlayerListener implements Listener {
     private final Logger logger;
     private final ClientMainThread clientMainThread;
@@ -22,8 +24,11 @@ public class PlayerListener implements Listener {
         this.clientMainThread = clientMainThread;
     }
 
-    @EventHandler
+    @EventHandler(priority = MONITOR)
     public void onPlayerMessageEvent(AsyncPlayerChatEvent e) {
+        if (e.isCancelled() ){//忽略已被标记为取消的聊天事件
+                return;
+            }
         String formatMessage = ConfigOperation.getFormatMessage();
         if (formatMessage != null && (!formatMessage.equals("")) && clientMainThread.isAlive()) {
             clientMainThread.addSendQueue(ConnectionPacketSendUtil.getMessagePacket(
