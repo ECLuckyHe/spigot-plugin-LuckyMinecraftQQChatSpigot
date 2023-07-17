@@ -10,14 +10,22 @@ import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.packet.threa
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.FormatPlaceholder;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.MinecraftMessageUtil;
 import fun.boomcat.luckyhe.spigot.plugin.luckyminecraftqqchatspigot.util.ReplacePlaceholderUtil;
-import org.bukkit.plugin.java.JavaPlugin;
+import net.fabricmc.api.ModInitializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+//import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
-public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
+//public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
+public class LuckyMinecraftQQChatSpigot implements ModInitializer {
+
+    public static final Logger LOGGER = LoggerFactory.getLogger("LuckyMinecraftQQChatFabric");
 
     private ClientMainThread clientMainThread;
-    @Override
+//    @Override
     public void onLoad() {
         try {
             DataOperation.initDataPath(getDataFolder(), getResource("data.yml"));
@@ -82,5 +90,30 @@ public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
                 FormatPlaceholder.SERVER_NAME,
                 ConfigOperation.getServerName()
         ));
+    }
+
+    @Override
+    public void onInitialize() {
+        onLoad();
+    }
+
+    private File getDataFolder() {
+
+    }
+
+    private InputStream getResource(String path) {
+
+    }
+
+    private void saveDefaultConfig() {
+
+    }
+
+    private void reloadConfig() {
+
+    }
+
+    private Logger getLogger() {
+        return LOGGER;
     }
 }
