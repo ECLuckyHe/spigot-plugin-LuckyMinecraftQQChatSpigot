@@ -18,6 +18,7 @@ public class DataOperation {
 
     public static void initDataPath(File path, InputStream dataStream) throws IOException {
         dataPath = path;
+        dataPath.mkdirs();
 
         File[] files = dataPath.listFiles();
         boolean hasData = false;
