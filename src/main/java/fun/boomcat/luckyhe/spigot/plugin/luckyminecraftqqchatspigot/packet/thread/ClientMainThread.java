@@ -48,7 +48,9 @@ public class ClientMainThread extends Thread {
     }
 
     public void addSendQueue(Packet packet) {
-        minecraftThread.addSendQueue(packet);
+        try {
+            minecraftThread.addSendQueue(packet);
+        } catch (Exception ignored) {}
     }
 
     @Override
