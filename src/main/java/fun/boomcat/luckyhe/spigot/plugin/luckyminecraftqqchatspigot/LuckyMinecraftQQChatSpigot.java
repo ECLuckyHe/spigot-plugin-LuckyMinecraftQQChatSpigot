@@ -17,6 +17,11 @@ import java.io.IOException;
 public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
 
     private ClientMainThread clientMainThread;
+
+    public ClientMainThread getClientMainThread() {
+        return clientMainThread;
+    }
+
     @Override
     public void onLoad() {
         try {
@@ -49,7 +54,7 @@ public class LuckyMinecraftQQChatSpigot extends JavaPlugin {
         }
 
         getLogger().info("开始注册玩家监听器");
-        getServer().getPluginManager().registerEvents(new PlayerListener(getLogger(), clientMainThread), this);
+        getServer().getPluginManager().registerEvents(new PlayerListener(getLogger(), this), this);
         getLogger().info("注册完成");
 
 //        延时一秒
